@@ -3,3 +3,8 @@
   to = "http://2f70ce8a.r31.cpolar.top/:splat"
   status = 200
   force = true
+[[redirects]]
+  from = "/api1/*"
+  to = "http://26eb465d.r31.cpolar.top/:splat"
+  status = 200
+  force = true
