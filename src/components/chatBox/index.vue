@@ -23,7 +23,7 @@
             v-model="textInput"
             id="textArea"
             class="outline-none text-lg w-full max-h-[210px] resize-none border rounded-lg p-3"
-            placeholder="请输入你想问的问题"
+            placeholder="请输入你想问的问题,生成教案请以“/教案”为开头 例如：/教案 三角函数"
             @keydown.enter.exact.prevent="messageSent"
             @keydown.shift.enter="newLine">
         </textarea>
@@ -39,7 +39,7 @@
 import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { getAIResponseAPI } from "../../apis";
 import { getAIResponseStreamAPI } from "../../apis";
-import { getChatHistoryAPI, uploadChatHistoryAPI } from "../../apis";
+import { getChatHistoryAPI, uploadChatHistoryAPI,downloadDocAPI } from "../../apis";
 import { ElNotification } from 'element-plus';
 import { useMainStore } from "../../stores";
 import { useQuizStore } from "../../stores/quizStore";
@@ -60,7 +60,7 @@ const route = useRoute();
 let previousTopicId = Number(route.query.topicId);
 
 const formatMessage = (message) => {
-  return message.role === 'ai' ? md.render(message.content) : message.content;
+  return message.role === 'system' ? md.render(message.content) : message.content;
 };
 
 onActivated(() => {
@@ -156,6 +156,7 @@ onMounted(() => {
 onUnmounted(() => {
   uploadChatHistory();
 });
+const isLoading = ref(false);  // 用于控制加载动画的显示
 
 async function messageSent() {
   let userMessage = textInput.value.trim();
@@ -165,6 +166,9 @@ async function messageSent() {
 
   // 判断是否是生成教案指令
   if (userMessage.includes('/教案')) {
+    // 开启加载动画
+    isLoading.value = true;
+
     // 去掉指令部分，保留关键词
     userMessage = userMessage.replace('/教案', '').trim();
     const originalQuestion = userMessage;
@@ -179,14 +183,21 @@ async function messageSent() {
     textInput.value = '';
 
     try {
+      chatMsg.value.push({
+        role: 'system',
+        content:"教学设计生成中，请稍等...",
+        timestamp: new Date().toISOString()
+      });
       // 请求 DeepSeek API 返回教学设计
       const AIResponse = await getAIResponseAPI(chatMsg.value.concat([{ role: 'user', content: fullPrompt }]));
 
+      // 将返回的 AIResponse 存储到聊天记录
       chatMsg.value.push({
         role: 'system',
-        content: AIResponse,
+        content:"教学设计已经生成并下载",
         timestamp: new Date().toISOString()
       });
+      let payload = AIResponse.replace(/`/g,"").replace('json',"");
 
       // 滚动到底部
       await nextTick(() => {
@@ -194,8 +205,30 @@ async function messageSent() {
         if (container) container.scrollTop = container.scrollHeight;
       });
 
+      // 调用接口来下载教案的 Word 文档
+      const response = await downloadDocAPI(payload);
+
+      // 创建一个 Blob 对象
+      const blob = new Blob([response], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // 适当的文件类型
+      });
+
+      // 创建下载链接并模拟点击
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `${originalQuestion}-教学设计.docx`;  // 文件名
+      document.body.appendChild(link);
+      link.click();
+
+      // 清理
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err: any) {
       ElNotification({ title: '生成失败', message: err.toString(), type: 'error' });
+    } finally {
+      // 关闭加载动画
+      isLoading.value = false;
     }
 
   } else {
@@ -226,6 +259,8 @@ async function messageSent() {
     }
   }
 }
+
+
 
 function newLine(e: KeyboardEvent) {
   if (e.shiftKey) {

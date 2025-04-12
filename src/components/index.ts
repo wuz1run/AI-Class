@@ -26,5 +26,5 @@ export {
     homeNotification,
     quizView,
     navBar,
-    quizchatBox,
+    quizchatBox
 }

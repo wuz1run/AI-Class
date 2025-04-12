@@ -2,13 +2,8 @@ import { request } from "../request";
 
 
 
-const getQuizAPI = async (query:{
-    testid:string
-}) => {
-    let url = "/api/quiz/getquiz?";
-    for(let key in query){
-        url=url.concat(key.concat('=').concat(query[key]).concat('&'))
-    }
+const getQuizAPI = async () => {
+    let url = "/api/quiz/get";
     const token = localStorage.getItem('token')
     return request(url,{
         method: 'get',

@@ -154,6 +154,7 @@ onMounted(() => {
         <el-tag type="info">总题数: {{ quizList.length }}</el-tag>
         <el-tag type="success">选择题: {{ quizList.filter(q => q.type === 'choice').length }}</el-tag>
         <el-tag type="warning">填空题: {{ quizList.filter(q => q.type === 'cloze').length }}</el-tag>
+        <el-tag type="warning">简答题: {{ quizList.filter(q => q.type === 'short_answer').length }}</el-tag>
       </div>
     </div>
 
@@ -179,7 +180,10 @@ onMounted(() => {
                 :type="quiz.type === 'choice' ? 'success' : 'warning'"
                 size="small"
             >
-              {{ quiz.type === 'choice' ? '选择题' : '填空题' }}
+              {{    quiz.type === 'choice' ? '选择题' :
+                    quiz.type === 'cloze' ? '填空题' :
+                    quiz.type === 'short_answer' ? '简答题' : '未知题型'
+              }}
             </el-tag>
             <el-tag v-if="quiz.tag" type="info" size="small">{{ quiz.tag }}</el-tag>
           </div>

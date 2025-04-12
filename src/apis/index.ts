@@ -38,6 +38,8 @@ import joinClassAPI from "./Server/joinClassAPI";
 import getStudentClassesAPI from "./Server/getStudentClassesAPI";
 import studentGetQuizAPI from "./Server/studentGetQuizAPI";
 import getTestIDAPI from "./Server/getTestIDAPI";
+import checkAnswerAPI from "./Server/myResources/checkAnswerAPI"
+import downloadDocAPI from "./Server/myResources/downloadDocAPI";
 import getAIResponseStreamAPI from "./Server/chat/getAIResponseStreamAPI";
 export {
     loginAPI,//finished
@@ -66,7 +68,8 @@ export {
     studentGetQuizAPI,//self-made
     getTestIDAPI,//self-made
     getAIResponseStreamAPI,//self-made
-    createDirectoryAPI,//Maybe Unused 
+    downloadDocAPI,
+    createDirectoryAPI,//Maybe Unused
     getFileListAPI,//Maybe Unused
     getFileInfoAPI,//Maybe Unused
     modifyFileNameAPI,//Maybe Unused
@@ -81,4 +84,6 @@ export {
     restoreFileAPI,//Maybe Unused
     completelyDelAPI,//Maybe Unused
     sendVerificationCodeAPI,//Maybe Unused
+    checkAnswerAPI,
+
 }

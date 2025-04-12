@@ -82,9 +82,11 @@ import { storeToRefs } from 'pinia';
 import { ElCard, ElTag, ElEmpty, ElNotification, ElRadio, ElRadioGroup, ElInput } from "element-plus";
 import { computed, onMounted, ref } from 'vue';
 import { useQuizStore } from "../../stores/quizStore";
-import { getQuizAPI } from "../../apis";
+import { studentGetQuizAPI } from "../../apis";
 import {useRequest} from "vue-hooks-plus";
 import {uploadAnswerAPI} from "../../apis";
+//简答题
+import { checkAnswerAPI } from "../../apis";
 const quizStore = useQuizStore();
 const { jsonData } = storeToRefs(quizStore);
 const quizList = ref<Array<quizData>>([]);
@@ -102,6 +104,9 @@ interface quizData {
   type: string;
 }
 console.log('当前ID:', id);
+
+//添加简答题逻辑
+const isEssayQuestion = (quiz: quizData) => quiz.type === 'short_answer';
 
 // 学生答题状态
 interface StudentAnswer {
@@ -121,7 +126,7 @@ const formatTime = (seconds: number) => {
 
 // 获取习题数据
 onMounted(() => {
-  useRequest(() => getQuizAPI({testid:String(id)}), {
+  useRequest(() => studentGetQuizAPI({testid:String(id)}), {
     onSuccess(res) {
       if (res?.['code'] === 200) {
         // 确保每个题目都有唯一id
@@ -147,17 +152,30 @@ const startTimer = () => {
 };
 
 // 答案验证
-const isCorrect = (quiz: any) => {
-  console.log('当前答案:', answers.value[quiz.id]," 答案:', quiz.answer", answers.value[quiz.id]?.toString().trim() === quiz.answer?.toString().trim());
-  return answers.value[quiz.quizsid]?.toString().trim() === quiz.answer?.toString().trim();
+const isCorrect = (quiz: quizData) => {
+  if (!isEssayQuestion(quiz)) {
+    return answers.value[quiz.quizesid]?.toString().trim() === quiz.answer?.toString().trim();
+  }
+  return false; // 简答题交给后端判定
 };
 
+// 添加简答题评分结果存储
+const essayScores = ref<{
+  [key: string]: {
+    similarity: number,
+    reasons: string[],
+    keyPointsAnalysis: any,
+    hasLogicalContradictions: boolean,
+    contradictionDetails: string | null
+  }
+}>({});
+
 // 选项样式
-const getOptionClass = (quiz: any, option: string) => {
+const getOptionClass = (quiz: quizData, option: string) => {
   if (!submitted.value) return '';
   return {
     'correct-option': option === quiz.answer,
-    'error-option': answers.value[quiz.id] === option && !isCorrect(quiz)
+    'error-option': answers.value[quiz.quizesid] === option && !isCorrect(quiz)
   };
 };
 
@@ -173,22 +191,77 @@ const userinfostore = useMainStore().userInfoStore();
 const handleSubmit = async () => {
   try {
     submitted.value = true;
-    // 构造提交数据
-    const payload = quizList.value.map(quiz => ({
-      quizid: quiz.quizesid,
-      userid: userinfostore.userInfo?.userid,
-      studentanswer: answers.value[quiz.quizesid],
-      iscorrect: answers.value[quiz.quizesid] === quiz.answer
-    }));
-    console.log(payload)
+
+    // 筛选出简答题
+    const essayQuestions = quizList.value.filter(isEssayQuestion);
+
+    // 并行处理简答题评分
+    const essayPromises = essayQuestions.map(async (quiz) => {
+      const answer = answers.value[quiz.quizesid];
+      if (answer) {
+        try {
+          const result = await checkAnswerAPI({
+            student_answer: answer,
+            correct_answer: quiz.answer
+          });
+          if (result.code === 200) {
+            essayScores.value[quiz.quizesid] = {
+              similarity: result.data.similarity_percentage,
+              reasons: result.data.reasons,
+              keyPointsAnalysis: result.data.key_points_analysis,
+              hasLogicalContradictions: result.data.has_logical_contradictions,
+              contradictionDetails: result.data.contradiction_details
+            };
+          }
+        } catch (error) {
+          console.error(`评分问题 ${quiz.quizesid} 失败:`, error);
+        }
+      }
+    });
+
+    // 等待评分完成
+    await Promise.all(essayPromises);
+
+    // 构造 payload
+    const payload = quizList.value.map(quiz => {
+      const baseAnswer = {
+        quizid: quiz.quizesid,
+        userid: userinfostore.userInfo?.userid,
+        studentanswer: answers.value[quiz.quizesid],
+        iscorrect: !isEssayQuestion(quiz)
+            ? answers.value[quiz.quizesid]?.toString().trim() === quiz.answer?.toString().trim()
+            : essayScores.value[quiz.quizesid]?.similarity >= 60
+      };
+
+      // 如果是简答题，附加评分信息
+      if (isEssayQuestion(quiz) && essayScores.value[quiz.quizesid]) {
+        const score = essayScores.value[quiz.quizesid];
+        return {
+          ...baseAnswer,
+          similarityPercentage: score.similarity,
+          reasons: score.reasons,
+          keyPointsAnalysis: score.keyPointsAnalysis,
+          hasLogicalContradictions: score.hasLogicalContradictions,
+          contradictionDetails: score.contradictionDetails,
+          isPassed: score.similarity >= 60
+        };
+      }
+
+      return baseAnswer;
+    });
+
+    console.log(payload);
+
+    // 提交答案
     const response = await uploadAnswerAPI(payload);
-    if (response['code'] === 200) {
-      console.log('提交成功:', response['data']);
+    if (response.code === 200) {
+      console.log('提交成功:', response.data);
     }
   } catch (error) {
     console.error('提交失败:', error);
   }
 };
+
 </script>
 
 <style scoped>

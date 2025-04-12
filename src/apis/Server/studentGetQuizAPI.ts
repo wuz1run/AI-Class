@@ -5,7 +5,7 @@ const studentGetQuizAPI = async (query:{
     testid?: number,
 }) => {
     const token = localStorage.getItem('token');
-    let url = "/api/class/quizlist?";
+    let url = "/api/quiz/getquiz?";
     for(let key in query){
         url=url.concat(key.concat('=').concat(query[key]).concat('&'))
     }

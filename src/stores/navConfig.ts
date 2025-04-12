@@ -57,6 +57,13 @@ export const navItems: NavItem[] = [
         path:"/classManagement",
         roles:["teacher"],
         requireAuth: true
+    },
+    {
+        name:"智能学情分析页面",
+        path:"/studyAnalyse",
+        roles:["teacher"],
+        requireAuth: true
     }
+
 
 ]

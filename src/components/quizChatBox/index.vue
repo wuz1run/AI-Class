@@ -122,7 +122,7 @@ async function messageSent() {
   if(userMessage.includes('/习题')){
     userMessage=userMessage.replace('/习题','');
     let oldUserMessage = userMessage;
-    let newUserMessage="生成下列知识点的习题，要求用JSON格式呈现，不允许输出Markdown格式的其他字符，只能输出标准的以[开头一]结尾的json数组。包括习题的题目（question），答案（answer），选项（options），知识点标签（tag），题目类型（choice，cloze）。知识点是："+userMessage
+    let newUserMessage="生成下列知识点的习题，要求用JSON格式呈现，不允许输出Markdown格式的其他字符，只能输出标准的以[开头一]结尾的json数组。包括习题的题目（question），答案（answer），选项（options），知识点标签（tag），题目类型（choice，cloze,short_answer）其中简答题没有选项。知识点是："+userMessage
     console.log(userMessage)
     chatMsg.value.push({
       role: 'user',

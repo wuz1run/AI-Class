@@ -13,6 +13,7 @@ import quizView from "./quizView/index.vue";
 import studentHome from "./studentHome/index.vue";
 import studentQuizView from "./studentQuizView/index.vue";
 import studentTestView from "./studentTestView/index.vue";
+import studyAnalyse from "./studyAnalyse/index.vue"
 export {
     login,
     register,
@@ -28,5 +29,6 @@ export {
     quizView,
     studentHome,
     studentQuizView,
-    studentTestView
+    studentTestView,
+    studyAnalyse
 }
