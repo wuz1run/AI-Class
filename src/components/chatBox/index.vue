@@ -1,25 +1,34 @@
 <template>
   <div class="ml-6 mt-5">
     <div id="chatBox" class="w-[78%] h-[77%] overflow-auto absolute bg-base-200">
-      <div v-for="(value, index) in chatMsg" class="mt-2">
-        <div class="chat" :class="[chatMsg[index]['role'] === 'user' ? 'chat-end' : 'chat-start']">
-          <div class="chat-image avatar">
-            <div class="w-14 rounded-full">
-              <img
-                  alt="Failed"
-                  :src="chatMsg[index]['role'] === 'user' ? userinfostore.userInfo.avatar : '/aichat/aiAvatar.png'" />
-            </div>
+      <<div v-for="(value, index) in chatMsg" class="mt-2">
+      <div class="chat" :class="[chatMsg[index]['role'] === 'user' ? 'chat-end' : 'chat-start']">
+        <div class="chat-image avatar">
+          <div class="w-14 rounded-full">
+            <img
+                alt="Failed"
+                :src="chatMsg[index]['role'] === 'user' ? userinfostore.userInfo.avatar : '/aichat/aiAvatar.png'" />
           </div>
-          <div
-              class="chat-bubble"
-              :class="[chatMsg[index]['role'] === 'user' ? 'bg-blue-700 text-base-100' : 'bg-base-100 text-base-content']">
-            <span v-if="chatMsg[index]['role'] === 'user'">{{ chatMsg[index]['content'] }}</span>
-            <div v-else v-html="formatMessage(chatMsg[index])"></div>
-          </div>
+        </div>
+        <div
+            class="chat-bubble"
+            :class="[chatMsg[index]['role'] === 'user' ? 'bg-blue-700 text-base-100' : 'bg-base-100 text-base-content']">
+          <span v-if="chatMsg[index]['role'] === 'user'">{{ chatMsg[index]['content'] }}</span>
+          <div v-else v-html="formatMessage(chatMsg[index])"></div>
+
+          <!-- Add button below the generated AI response -->
+          <el-button
+              v-if="chatMsg[index]['content'] === '教学设计已经生成并下载' && docDownloadUrl"
+              type="primary"
+              class="mt-2"
+              @click="manualDownload"
+          >
+            下载教学设计
+          </el-button>
         </div>
       </div>
     </div>
-    <div class="textarea textarea-bordered absolute bottom-0 left-0 right-0 flex justify-center w-full bg-white">
+      <div class="textarea textarea-bordered absolute bottom-0 left-0 right-0 flex justify-center w-full bg-white">
       <div class="w-[78%] flex items-end pb-4">
         <textarea
             v-model="textInput"
@@ -85,6 +94,13 @@ const getChatHistory = async () => {
     ElNotification({ title: 'Error', message: err.toString(), type: 'error' });
   }
 };
+function manualDownload() {
+  if (docDownloadUrl.value) {
+    window.open(docDownloadUrl.value, "_blank");
+  } else {
+    ElNotification({ title: '提示', message: '当前暂无可下载内容', type: 'warning' });
+  }
+}
 
 const uploadChatHistory = async () => {
   const newMessages = chatMsg.value.slice(lastUploadedIndex);
@@ -153,7 +169,7 @@ onMounted(() => {
 onUnmounted(() => {
   uploadChatHistory();
 });
-
+let docDownloadUrl=ref('')
 const isLoading = ref(false);
 
 async function messageSent() {
@@ -193,7 +209,8 @@ async function messageSent() {
       const response = await downloadDocAPI(payload);
       const fileUrl = response.download_url;
       if (fileUrl) {
-        window.open(fileUrl, "_blank");
+        docDownloadUrl.value = fileUrl; // 保存下载链接
+        ElNotification({ title: '已生成', message: '点击下方按钮手动下载', type: 'success' });
       } else {
         console.error("文件未找到");
       }
