@@ -3,7 +3,7 @@ import { pythonrequest } from "../../pythonrequest";
 const token = localStorage.getItem('token')
 
 const getDocAPI = async (jsonData: string) => {
-    let url = `/api1/v1/word/export-from-json`
+    let url = `/api1/word/export-from-json`
 
     return pythonrequest(url, {
         method: "post",
