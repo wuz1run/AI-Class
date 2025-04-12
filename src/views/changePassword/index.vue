@@ -57,7 +57,7 @@ const info = reactive({
 })
 
 const isEqual = ref(true);
-
+//
 watch([()=>info.new_pass1,()=>info.new_pass2],([new1,new2],[old1,old2])=>{
   if(info.new_pass1 !== info.new_pass2 && info.new_pass2 !== ""){
     isEqual.value = false;
@@ -80,14 +80,14 @@ const changePass = () => {
     new_password: info.new_pass1,
   }),{
     onSuccess(res){
-      if(res.code === 200){
-        ElNotification({title: 'Success', message: res.msg + '，修改成功', type: 'success',});
+      if(res['code'] === 200){
+        ElNotification({title: 'Success', message: res['msg'] + '，修改成功', type: 'success',});
       }else{
-        ElNotification({title: 'Warning', message: res.msg, type: 'warning',});
+        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',});
       }
     },
     onError(err){
-      ElNotification({title: 'Error', message: err, type: 'error',})
+      ElNotification(err)
     }
   })
 }

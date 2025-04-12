@@ -2,15 +2,15 @@ import { useMainStore } from "../stores";
 import pinia from "../stores/createPinia";
 import { storeToRefs } from "pinia";
 import { createRouter,createWebHistory } from "vue-router";
-
-import { login, register, findPassword, changePassword, AIChat, home, userInfo, myResources, lessonPreparationMaterials, classManagement,quizRelease } from "../views"
-
+import {navItems, UserRole} from '../stores/navConfig';
+import { studentQuizView,quizView,login, register, findPassword, changePassword, AIChat, home, userInfo, myResources, lessonPreparationMaterials, classManagement,quizRelease,studentHome,studentTestView ,studyAnalyse} from "../views"
 const routes = [
     {
         path: "/login",
         component: login
     },
     {
+
         path: "/register",
         component: register
     },
@@ -27,7 +27,7 @@ const routes = [
         component: AIChat
     },
     {
-        path: "/",
+        path: "/home",
         component: home
     },
     {
@@ -49,6 +49,31 @@ const routes = [
     {
         path: "/quizRelease",
         component: quizRelease,
+    },
+    {
+        path:"/quizView",
+        component: quizView,
+    },
+    {
+        path: "/student",
+        component: studentHome
+    },
+    {
+        path: "/",
+        component: home
+    },
+    {
+        path: "/studentQuizView",
+        component: studentQuizView
+    },
+    {
+        path: "/studentTestView/:id",
+        name: "studentTestView",
+        component: studentTestView
+    },
+    {
+        path: "/studyAnalyse",
+        component: studyAnalyse
     }
 
 ]
@@ -58,15 +83,27 @@ const router = createRouter({
     routes:routes
 })
 
-router.beforeEach((to,_,next) => {
-    const loginstore = useMainStore().loginStore(pinia);
-    const { loginSession } = storeToRefs(loginstore);
+router.beforeEach((to) => {
+    const userStore = useMainStore().userInfoStore()
+    const loginStore = useMainStore().loginStore()
+    const requiredAuth = navItems.find(item => item.path === to.path)?.requireAuth
 
-    if(loginSession.value === false && to.path !== "/login" && to.path !== "/register" && to.path !== "/login/findPassword") {
-        next("/login");
-    }else{
-        next();
+    // 需要登录但未登录
+    if (requiredAuth && !loginStore.loginSession) {
+        return '/login'
     }
-});
+
+    // 角色验证
+    const routeConfig = navItems.find(item => item.path === to.path)
+    if (routeConfig) {
+        const userRole = userStore.userInfo.character as UserRole || 'student'
+        const hasPermission = routeConfig.roles.includes('*') ||
+            routeConfig.roles.includes(userRole)
+
+        if (!hasPermission) {
+            return '/unauthorized' // 添加无权限页面
+        }
+    }
+})
 
 export default router;

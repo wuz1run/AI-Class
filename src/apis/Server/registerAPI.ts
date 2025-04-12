@@ -4,6 +4,7 @@ const registerAPI = async (data:{
     username: string,
     email: string,
     password: string,
+    character: number,
 }) => {
     return request("/api/user/reg",{
         method: "post",

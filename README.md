@@ -1,5 +1,5 @@
-# Vue 3 + Vite
+# 更新日志
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
-
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+2025年3月26日：取消学生单独逻辑，优化页面样式
+2025年3月27日：添加上传聊天历史API，细化聊天与习题发布逻辑
+--todo ：增加班级管理逻辑及相关API

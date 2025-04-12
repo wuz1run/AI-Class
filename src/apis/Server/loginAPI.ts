@@ -6,7 +6,7 @@ const loginAPI = async (data:{
 }) => {
     return request("/api/user/login",{
         method: "post",
-        headers: {"Content-Type":"application/json",},
+            headers: {"Content-Type":"application/json",},
         data: data,
     })
 }

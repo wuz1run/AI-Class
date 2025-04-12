@@ -9,9 +9,11 @@ import myResources from "./myResources/index.vue";
 import lessonPreparationMaterials from "./lessonPreparationMaterials/index.vue";
 import classManagement from "./classManagement/index.vue";
 import quizRelease from "./quizRelease/index.vue";
-
-
-
+import quizView from "./quizView/index.vue";
+import studentHome from "./studentHome/index.vue";
+import studentQuizView from "./studentQuizView/index.vue";
+import studentTestView from "./studentTestView/index.vue";
+import studyAnalyse from "./studyAnalyse/index.vue"
 export {
     login,
     register,
@@ -23,5 +25,10 @@ export {
     myResources,
     lessonPreparationMaterials,
     classManagement,
-    quizRelease
+    quizRelease,
+    quizView,
+    studentHome,
+    studentQuizView,
+    studentTestView,
+    studyAnalyse
 }

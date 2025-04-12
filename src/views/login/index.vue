@@ -42,6 +42,9 @@
       <div class="mt-3">
         <router-link to="/login/findPassword" class="text-sm text-blue-700 cursor-pointer hover:underline">忘记密码？</router-link>
       </div>
+      <div class="mt-3">
+        <router-link to="/register" class="text-sm text-blue-700 cursor-pointer hover:underline">没有账号？先去注册</router-link>
+      </div>
       <div @click="login" class="relative h-[30px] cursor-pointer mt-3 mb-5">
         <img src="/btn%20watch.png">
         <div class="absolute top-[30%] left-[40%] text-base-100">点击登录</div>
@@ -62,34 +65,63 @@ import { loginAPI, getUserInfoAPI } from "../../apis"
 import { ElNotification } from 'element-plus'
 import { useMainStore } from "../../stores";
 import router from "../../router";
-
+import {nextTick} from "vue";
 const loginstore = useMainStore().loginStore();
 const userinfostore = useMainStore().userInfoStore();
 
 const email = ref<string>();
 const password = ref<string>();
 
-const login = () => {
-  useRequest(()=>loginAPI({"email":email.value, "password":password.value}),{
-    onSuccess(res){
-      if(res['code'] === 200){
-        ElNotification({title: 'Success', message: res['msg'], type: 'success',})
+const login = async () => {
+  try {
+    const loginRes = await loginAPI({
+      email: email.value,
+      password: password.value,
+    }
+    )
+    ;
 
-        localStorage.setItem("token",res['data']['token']);
-        loginstore.setLogin(true);
+    // 处理 loginAPI 的非 200 响应
+    if (loginRes.code !== 200) {
+      throw new Error(loginRes.msg || "登录失败，请检查邮箱和密码");
+    }
 
-        getUserInfo();  // 获取用户信息
+    // 安全存储 Token（需结合环境配置）
+    localStorage.setItem("token", loginRes.data.token);
+    console.log("Token:", localStorage.getItem("token"));
+    loginstore.setLogin(true);
 
-        router.push("/");
-      }else{
-        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',})
-      }
-    },
-    onError(err){
-      ElNotification({title: 'Error', message: err.toString(), type: 'error',})
-    },
-  })
-}
+    // 获取用户信息
+    const userRes = await getUserInfoAPI();
+    if (userRes.code !== 200) {
+      throw new Error(userRes.msg || "获取用户信息失败");
+    }
+
+    userinfostore.setInfo(userRes.data);
+
+    // 确保用户角色存在
+    const role = userinfostore.userInfo?.character;
+    if (!role) {
+      ElNotification.warning("未获取到用户角色，请联系管理员");
+      loginstore.setLogin(false); // 重置登录状态
+      localStorage.removeItem("token");
+      return;
+    }
+
+    // 跳转到目标页面
+    const targetRoute = role === "teacher" ? "/home" : "/student";
+    router.push({
+      path: targetRoute,
+    });
+
+  } catch (error) {
+    // 处理错误信息
+    const message = error.message || "未知错误，请重试";
+    ElNotification.error(message);
+
+    // 清理登录状态（可选）
+  }
+};
 
 const getUserInfo = () => {
   useRequest(()=>getUserInfoAPI(),{

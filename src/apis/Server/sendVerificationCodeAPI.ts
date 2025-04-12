@@ -1,10 +1,10 @@
 import { request } from "../request";
 
-const sendVerificationCodeAPI = async (data:{email:string}) => {
-    return request("/api/email/code",{
+const sendVerificationCodeAPI = async (email:string) => {
+    return request("/api/user/sendemail",{
         method: "post",
         headers: {"Content-Type":"application/json",},
-        data: data,
+        data: email,
     })
 }
 

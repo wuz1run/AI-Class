@@ -4,13 +4,22 @@ import { reactive, } from "vue";
 const userInfoStore = defineStore('userInfo',
     ()=>{
         const userInfo = reactive({
-            user_id: -1,
+            userid: -1,
             username: "",
             email: "",
             avatar: "",
             created_at: "",
+            character: "",
         })
         const setInfo = (data) => {
+            if(data['character']==0)
+            {
+                data['character'] = "teacher";
+            }
+            else if(data['character']==1)
+            {
+                data['character'] = "student";
+            }
             Object.assign(userInfo,data);
         }
         const changeInfo = (key,value) => {
@@ -22,6 +31,7 @@ const userInfoStore = defineStore('userInfo',
             userInfo['email'] = "";
             userInfo['avatar'] = "";
             userInfo['created_at'] = "";
+            userInfo['character'] = "";
         }
         return {
             userInfo,

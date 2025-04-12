@@ -1,254 +1,197 @@
+<!-- 父组件 ChatView.vue -->
 <template>
-<div class="flex h-screen w-full bg-base-200 relative">
-  <div class="card bg-base-100 w-[200px] shadow-md">
-    <div class="card-body">
-      <div>
-        <span class="flex float-right">
-          <div class="ml-1 lg:tooltip cursor-pointer hover:bg-base-300" data-tip="搜索"><el-icon :size="23" class="m-1"><Search /></el-icon></div>
-          <div class="ml-1 lg:tooltip cursor-pointer hover:bg-base-300" data-tip="新建会话" onclick="addTopic.showModal()"><el-icon :size="23" class="m-1"><Edit /></el-icon></div>
-        </span>
-      </div>
-      <h2 class="card-title mb-1 flex justify-center">会话列表</h2>
-      <div style="border-bottom: 2px solid #000000;"></div>
-      <div v-for="(value,index) in topicList"
-           class="w-[110%] rounded-lg hover:bg-base-300 hover:cursor-pointer text-base"
-           :class="[index === nowTopicInd ? 'bg-base-300' : '']"
-           @mouseenter="showChoIcon(index)" @mouseleave="notShowChoIcon(index)"
-           @click="chooseTopic(index)"
-      >
-        <div class="flex items-center justify-between m-1">{{value.title}}
-          <div
-              v-if="isShowChoIcon[index] || index===nowTopicInd"
-              onclick="topicInfo.showModal()" @click.stop="changeDiaInd(index)"
-              class="lg:tooltip" data-tip="more">
-            <div class="flex"><el-icon><More /></el-icon></div></div>
+  <div class="flex h-screen w-full bg-base-200 relative">
+    <!-- 侧边栏话题列表 -->
+    <div class="card bg-base-100 w-[200px] shadow-md">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="card-title">会话列表</h2>
+          <button
+              class="btn btn-circle btn-sm"
+              @click="openCreateDialog"
+          >
+            <el-icon><Plus /></el-icon>
+          </button>
+        </div>
+        <div class="divider my-1"></div>
+        <div
+            v-for="topic in topics"
+            :key="topic.topicid"
+            class="topic-item"
+            :class="{ 'bg-base-300': currentTopicId === topic.topicid }"
+            @click="selectTopic(topic.topicid)"
+        >
+          <div class="flex justify-between items-center">
+            <span class="truncate">{{ topic.title }}</span>
+            <div class="dropdown dropdown-end">
+              <button
+                  tabindex="0"
+                  class="btn btn-xs btn-ghost"
+                  @click.stop="openActionMenu(topic.topicid)"
+              >
+                <el-icon><MoreFilled /></el-icon>
+              </button>
+              <ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+                <li @click="deleteTopic(topic.topicid)">
+                  <a class="text-error">删除</a>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="flex flex-col gap-2 absolute bottom-[100px]">
-        <h2 class="card-title flex justify-center mb-1">快速功能</h2>
-        <div style="border-bottom: 2px solid #000000;"></div>
-        <div v-for="(value,index) in funcList" @click="showFuncForms(index)">
-          <div class="hover:bg-base-300 hover:cursor-pointer rounded-md">{{value}}</div>
-          <div style="border-bottom: 1px solid #000000;" class="mt-2"></div>
-        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="flex-1 relative">
+      <template v-if="currentTopicId">
+        <chat-box
+            :topic-id="currentTopicId"
+            @close="currentTopicId = 0"
+        />
+      </template>
+      <div v-else class="absolute inset-0 flex items-center justify-center">
+        <div class="text-gray-500">请选择或创建会话</div>
       </div>
     </div>
+
+    <!-- 创建会话弹窗 -->
+    <dialog ref="createDialog" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">新建会话</h3>
+        <input
+            v-model="newTopicTitle"
+            type="text"
+            placeholder="输入会话标题"
+            class="input input-bordered w-full"
+            @keyup.enter="createTopic"
+        />
+        <div class="modal-action">
+          <button class="btn" @click="closeCreateDialog">取消</button>
+          <button class="btn btn-primary" @click="createTopic">创建</button>
+        </div>
+      </div>
+    </dialog>
   </div>
-  <div v-show="nowFuncForms === 0">
-    <lessonPlanDesign></lessonPlanDesign>
-  </div>
-  <div v-if="nowTopicInd === -1 && nowFuncForms === -1" class="flex absolute bottom-0 left-[200px]">
-    <div>
-      <img src="/aichat/aiPerson.png">
-    </div>
-    <div class="chat chat-start">
-      <div class="chat-bubble bg-base-100 text-base-content max-w-96">你好！这里是教小帮，请选择会话记录或新建会话</div>
-    </div>
-  </div>
-  <div v-if="nowTopicInd !== -1">
-    <chatBox :key="topicList[nowTopicInd]['id']" :id="topicList[nowTopicInd]['id']"></chatBox>
-  </div>
-</div>
-<dialog id="topicInfo" class="modal">
-  <div class="modal-box">
-    <div class="overflow-x-auto">
-      <table class="table text-base">
-        <tbody>
-        <!-- row 1 -->
-        <tr>
-          <td class="w-2/5">会话名称</td>
-          <td><dClickEdit :data="topicList[dialogInd] ? toRef(topicList[dialogInd],'title') : ref('数据尚未加载')"></dClickEdit></td>
-        </tr>
-        <!-- row 2 -->
-        <tr>
-          <td>上一次更改时间</td>
-          <td>{{topicList[dialogInd] ? topicList[dialogInd]['updated_at'] : "数据尚未加载"}}</td>
-        </tr>
-        <!-- row 3 -->
-        <tr>
-          <td>创建时间</td>
-          <td>{{topicList[dialogInd] ? topicList[dialogInd]['created_at'] : "数据尚未加载"}}</td>
-        </tr>
-        <!-- row 4 -->
-        <tr>
-          <td></td>
-          <td><button @click="deleteTopic" class="btn btn-block btn-error"><el-icon><DeleteFilled /></el-icon>删除会话</button></td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button id="closeDialog">close</button>
-  </form>
-</dialog>
-<dialog id="addTopic" class="modal">
-  <div class="modal-box">
-    <div class="flex">
-      <input v-model="newTopicTitle" @keyup.enter="createTopic" type="text" placeholder="The title of the topic" class="input input-bordered w-full max-w-xs" />
-      <form method="dialog" class="ml-7">
-        <button @click="createTopic" class="btn btn-info">创建会话</button>
-      </form>
-    </div>
-    <div class="mt-4 ml-4">提示：<br />要创建多个会话，回车是不会退出对话框的<br />直接点击创建按钮会以当前的时间命名</div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, watch, toRef } from "vue";
-import { useRequest } from "vue-hooks-plus";
-import { getTopicListAPI } from "../../apis/";
-import { ElNotification } from 'element-plus';
-import { useMainStore } from "../../stores";
-import { deleteTopicAPI, modifyTitleAPI, createTopicAPI } from "../../apis";
-import router from "../../router";
-import { useRoute } from "vue-router";
-import { chatBox, dClickEdit, lessonPlanDesign } from "../../components"
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getTopicListAPI, createTopicAPI, deleteTopicAPI } from '../../apis'
+import chatBox from '../../components/chatBox/index.vue'
+import {MoreFilled} from "@element-plus/icons-vue";
 
-const topicList = ref([]);
-const isShowChoIcon = ref<Array<boolean>>([]);
+interface Topic {
+  topicid: number
+  title: string
+  created_at: string
+  updated_at: string
+}
 
-const dialogInd = ref<number>(0);
+// 状态管理
+const topics = ref<Topic[]>([])
+const currentTopicId = ref(0)
+const newTopicTitle = ref('')
+const createDialog = ref<HTMLDialogElement>()
+const router = useRouter()
 
-const newTopicTitle = ref<string>("");
-
-const nowTopicInd = ref<number>(-1);
-const nowRouter = useRoute();
-
-const funcList = reactive([
-    '自定义教案设计',
-    '大单元教学设计',
-    '跨学科设计',
-    '单元作业设计',
-    '说课稿设计',
-    '一键生成PPT',
-    '一键配图',
-])
-const nowFuncForms = ref<number>(-1);
-
-onMounted(()=>{
-  useRequest(()=>getTopicListAPI(),{
-    onSuccess(res){
-      if(res['code']===200){
-        if(!res['data']) return
-        for(let i=0; i<res['data'].length; i++){
-          topicList.value.push(reactive(res['data'][i]));
-          isShowChoIcon.value[i] = false;
-        }
-      }else{
-        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',})
-      }
-    },
-    onError(err){
-      ElNotification({title: 'Error', message: err.toString(), type: 'error',})
-    },
-    onFinally(){
-      if(nowRouter.query['index']){
-        nowTopicInd.value = Number(nowRouter.query['index']);
-      }else{
-        nowTopicInd.value = -1;
-      }
-      watch(()=>nowRouter.query,(newQuery,oldQuery)=>{
-        nowFuncForms.value = -1;
-        if(nowRouter.query['index']){
-          nowTopicInd.value = Number(nowRouter.query['index']);
-        }else{
-          nowTopicInd.value = -1;
-        }
-      })
-    }
-  })
+// 初始化加载
+onMounted(async () => {
+  await loadTopics()
+  syncRouteWithState()
 })
 
-const showChoIcon = (ind) => {
-  isShowChoIcon.value[ind] = true;
-}
-const notShowChoIcon = (ind) => {
-  isShowChoIcon.value[ind] = false;
-}
-
-const changeDiaInd = (ind) => {
-  dialogInd.value = ind;
-}
-
-const { data, run } = useRequest(()=>modifyTitleAPI({
-  id: topicList.value[dialogInd.value]['id'],
-  new_topic: topicList.value[dialogInd.value]['title'],
-}),{
-  debounceWait: 4000,
-  manual: true,
-  onSuccess(res){
-    if(res['code'] !== 200){
-      ElNotification({title: 'Warning', message: res['msg'], type: 'warning',});
-    }else{
-      console.log(res)
+// 加载话题列表
+const loadTopics = async () => {
+  try {
+    const res = await getTopicListAPI()
+    if (res.code === 200) {
+      topics.value = res.data
+      autoSelectFirstTopic()
     }
-  },
-  onError(err){
-    ElNotification({title: 'Error', message: err.toString(), type: 'error',});
+  } catch (error) {
+    ElMessage.error('加载会话列表失败')
   }
-})
+}
 
-watch(()=>topicList.value[dialogInd.value],c=>{
-  run();
-},{deep:true})
+// 自动选择第一个话题
+const autoSelectFirstTopic = () => {
+  if (topics.value.length > 0) {
+    currentTopicId.value = topics.value[0].topicid
+  }
+}
 
-const deleteTopic = () => {
-  useRequest(()=>deleteTopicAPI({id:topicList.value[dialogInd.value]["id"]}),{
-    onSuccess(res){
-      if(res['code'] === 200){
-        topicList.value.splice(dialogInd.value,1);
-        dialogInd.value = -1;
-        nowTopicInd.value = -1
-        router.push("/chat");
-        document.getElementById("closeDialog").click();
-        ElNotification({title: 'Success', message: "删除成功", type: 'success',});
-      }else{
-        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',});
-      }
-    },
-    onError(err){
-      ElNotification({title: 'Error', message: err.toString(), type: 'error',});
-    },
+// 路由状态同步
+const syncRouteWithState = () => {
+  router.replace({
+    query: { topicId: currentTopicId.value }
   })
 }
 
-const createTopic = () => {
-  if(newTopicTitle.value === ""){
-    newTopicTitle.value = new Date().toLocaleString();
-    console.log(newTopicTitle.value);
-  }
-  useRequest(()=>createTopicAPI({topic:newTopicTitle.value}),{
-    onSuccess(res){
-      if(res['code']===200){
-        ElNotification({title: 'Success', message: "会话添加成功", type: 'success',});
-      }else{
-        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',});
-      }
-    },
-    onError(err){
-      ElNotification({title: 'Error', message: err.toString(), type: 'error',});
-    },
-    onFinally(){
-      newTopicTitle.value = "";
+// 话题操作
+const selectTopic = (id: number) => {
+  currentTopicId.value = id
+  syncRouteWithState()
+}
+
+const openActionMenu = (id: number) => {
+  currentTopicId.value = id
+}
+
+// 删除话题
+const deleteTopic = async (id: number) => {
+  try {
+    await ElMessageBox.confirm('确定删除该会话吗？', '警告')
+    await deleteTopicAPI({id})
+    await loadTopics()
+    if (currentTopicId.value === id) {
+      currentTopicId.value = 0
     }
-  })
+    ElMessage.success('删除成功')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
-const chooseTopic = (ind) => {
-  nowTopicInd.value = ind;
-  router.push("/chat?index=".concat(String(nowTopicInd.value)))
+// 创建新话题
+const openCreateDialog = () => {
+  createDialog.value?.showModal()
 }
 
-const showFuncForms = (ind) => {
-  nowFuncForms.value = ind
+const closeCreateDialog = () => {
+  createDialog.value?.close()
+  newTopicTitle.value = ''
+}
+
+const createTopic = async () => {
+  if (!newTopicTitle.value.trim()) {
+    return ElMessage.warning('请输入会话标题')
+  }
+  let code=ref(0)
+    const res = await createTopicAPI({ topic: newTopicTitle.value })
+
+    if (res['code'] === 200) {
+      await loadTopics()
+
+      closeCreateDialog()
+      ElMessage.success('创建成功')
+    }
 }
 </script>
 
 <style scoped>
+.topic-item {
+  @apply p-2 rounded-lg mb-1 cursor-pointer transition-colors;
+  &:hover {
+    @apply bg-base-300;
+  }
+}
 
+.modal-box {
+  @apply w-96;
+}
 </style>

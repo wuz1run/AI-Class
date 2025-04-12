@@ -1,18 +1,25 @@
 <template>
-<div class="h-screen bg-base-200">
-  <img src="/topPic.png" class="w-full h-[75px]">
-  <navbar></navbar>
-  <div class="flex mt-1">
-    <router-view />
+  <div class="h-screen bg-base-200">
+    <navBar v-if="loginstore.loginSession"></navBar>
+    <div class="flex mt-1">
+      <router-view />
+    </div>
   </div>
-</div>
 </template>
 
 <script setup lang="ts">
 import { useMainStore } from "./stores";
-import { navbar, sidebar } from "./components"
+import { navBar } from "./components"
+import {onMounted} from "vue";
+import router from "./router";
 
 const loginstore = useMainStore().loginStore();
+onMounted(()=>{
+  if(!loginstore.loginSession){
+    router.push("/login");
+  }
+})
+
 </script>
 
 <style>

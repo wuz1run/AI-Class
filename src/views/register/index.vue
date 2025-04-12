@@ -11,6 +11,14 @@
         用户名
         <input v-model="info.username" type="text" class="grow" placeholder="Daisy" />
       </label>
+      <label class="input input-bordered flex items-center gap-2 mt-5">
+        身份
+        <select v-model="info.role" class="grow">
+          <option disabled value="">请选择身份</option>
+          <option>老师</option>
+          <option>学生</option>
+        </select>
+      </label>
       <label class="input input-bordered flex items-center gap-2 mt-4">
         邮箱
         <input v-model="info.email" type="text" class="grow w-[]" placeholder="daisy@site.com" />
@@ -51,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive } from "vue";
+import {ref, watch, reactive, computed} from "vue";
 import { useRequest } from "vue-hooks-plus";
 import { registerAPI } from "../../apis";
 import {ElNotification} from "element-plus";
@@ -62,6 +70,7 @@ const info = ref({
   email: "",
   pass1: "",
   pass2: "",
+  role: ""
 })
 
 const isEqual = ref<boolean>(true);
@@ -88,15 +97,22 @@ const register = () => {
     username: info.value.username,
     email: info.value.email,
     password: info.value.pass1,
+    character: computed(()=>{
+      if(info.value.role === "老师"){
+        return 0;
+      }else{
+        return 1;
+      }
+    }).value
   }),{
     onSuccess(res){
-      if(res.code === 200){
+      if(res['code'] === 200){
         ElNotification({title: 'Success', message: "注册成功", type: 'success',});
         setTimeout(()=>{
           router.push("/login");
         },1000)
       }else{
-        ElNotification({title: 'Warning', message: res.msg, type: 'warning',});
+        ElNotification({title: 'Warning', message: res['msg'], type: 'warning',});
       }
     },
     onError(err){
