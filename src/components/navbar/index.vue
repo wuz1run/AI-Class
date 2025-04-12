@@ -1,56 +1,88 @@
 <template>
-<div class="navbar bg-base-100 shadow-md h-[50px]">
-  <div class="flex-1 ">
-    <ul v-if="loginstore.loginSession" class="menu menu-horizontal px-1 font-bold">
-    <li><router-link to ="/home">首页</router-link> </li>
-    </ul>
-  </div>
-  <div class="flex-none">
-    <ul v-if="!loginstore.loginSession" class="menu menu-horizontal px-1 font-bold">
-      <li><router-link to="/login">登录</router-link></li>
-      <li><router-link to="/register">注册</router-link></li>
-    </ul>
-    <ul v-else class="menu menu-horizontal px-1 flex items-center font-bold">
-
-      <li><router-link to="/chat">AI教案设计</router-link></li>
-      <li><router-link to="/myResources">我的资源</router-link></li>
-      <li><router-link to="/quizRelease">习题发布</router-link> </li>
-      <li><router-link to="/classManagement">我的班级</router-link></li>
-      <div class="dropdown dropdown-end mr-4">
-        <div class="avatar" tabindex="0" role="button">
-          <div class="w-[40px] rounded-full">
-            <img :src="userinfostore.userInfo.avatar" />
-          </div>
-        </div>
-        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-          <li><a @click="loginOut">退出登录</a></li>
-          <li><a>To be filled</a></li>
+    <!-- 导航栏主体 -->
+    <div class="navbar bg-base-100 shadow-md h-[50px]">
+      <!-- 左侧导航项 -->
+      <div class="flex-1">
+        <ul class="menu menu-horizontal px-1 font-bold gap-2">
+          <template v-for="item in visibleNavItems" :key="item.path">
+            <li>
+              <router-link
+                  :to="item.path"
+                  class="[&.router-link-active]:text-primary hover:bg-base-200 px-3 py-2 rounded"
+              >
+                {{ item.name }}
+              </router-link>
+            </li>
+          </template>
         </ul>
       </div>
-    </ul>
-  </div>
-</div>
+
+      <!-- 右侧用户菜单 -->
+      <div class="flex-none gap-4">
+
+        <div class="dropdown dropdown-end mr-4">
+          <div class="avatar" tabindex="0" role="button">
+            <div class="w-[40px] rounded-full">
+              <img :src="userStore.userInfo.avatar" />
+            </div>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+
+            <li><a @click="gotouserinfo">用户信息</a></li>
+            <li><a @click="logout" style="color:red">退出登录</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { useMainStore } from "../../stores";
-import router from "../../router";
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { navItems,type UserRole } from '../../stores/navConfig'
+import { useMainStore } from '../../stores'
+import userInfoStore from "../../stores/Server/userInfoStore";
 
-const loginstore = useMainStore().loginStore();
-const userinfostore = useMainStore().userInfoStore();
+const router = useRouter()
+const mainStore = useMainStore()
+const userStore = mainStore.userInfoStore()
+const loginStore = mainStore.loginStore()
 
-const loginOut = () => {
+// 用户信息简写
+const userInfo = computed(() => userStore.userInfo)
+const currentRole = computed(() => userInfo.value.character as UserRole || 'student')
+
+// 导航项过滤逻辑
+const visibleNavItems = computed(() => {
+  return navItems.filter(item =>
+      item.roles.includes('*') ||
+      item.roles.includes(currentRole.value)
+  ).filter(item =>
+      item.requireAuth ? loginStore.loginSession : true
+  )
+})
+
+// 管理员专属导航项
+const adminNavItems = computed(() => {
+  return navItems.filter(item =>
+      item.roles.includes('admin') &&
+      item.roles.includes(currentRole.value)
+  )
+})
+
+// 是否显示顶部图片
+const showTopImage = computed(() => !router.currentRoute.value.meta.hideTopImage)
+
+const logout = () => {
   localStorage.removeItem("token");
-  loginstore.setLogin(false);
-  userinfostore.clearInfo();
+  loginStore.setLogin(false);
+  userStore.clearInfo();
   router.push('/login');
 }
-</script>
-
-<style scoped>
-.main{
-  display: flex;
-  justify-content: left;
-  left: 600px;
+function gotouserinfo() {
+  router.push('/userInfo')
 }
-</style>
+const navigateToProfile = () => {
+  router.push(`/home`)
+}
+</script>
