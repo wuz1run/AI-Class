@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://2f70ce8a.r31.cpolar.top/:path*"
+    },
+    {
+      "source": "/api1/:path*",
+      "destination": "http://26eb465d.r31.cpolar.top/:path*"
+    }
+  ]
+}
