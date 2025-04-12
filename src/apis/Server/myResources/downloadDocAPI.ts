@@ -13,7 +13,10 @@ const downloadDocAPI = async (jsonData: string) => {
                 'Authorization': `Bearer ${token}`
             },
             data: jsonData,
-        });
+        });}
+    catch (error) {
+      console.error("文件下载失败", error);
+    }}
 
 //         // 假设后端返回的响应是文件的下载 URL
 //         const fileUrl = response.download_url;
