@@ -1,11 +1,11 @@
-import { request } from "../../request";
+import { pythonrequest } from "../../pythonrequest";
 
 const token = localStorage.getItem('token')
 
 const getDocAPI = async (jsonData: string) => {
     let url = `/api1/v1/word/export-from-json`
 
-    return request(url, {
+    return pythonrequest(url, {
         method: "post",
         headers: {
             "Content-Type": "application/json",
