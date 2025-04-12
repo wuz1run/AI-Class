@@ -54,7 +54,6 @@ const md = new MarkdownIt();
 const textInput = ref<string>("");
 const chatMsg = ref<any[]>([]);
 let lastUploadedIndex = 0;
-
 const props = defineProps<{ topicId: number }>();
 const route = useRoute();
 let previousTopicId = Number(route.query.topicId);
@@ -209,21 +208,6 @@ async function messageSent() {
       const response = await downloadDocAPI(payload);
 
       // 创建一个 Blob 对象
-      const blob = new Blob([response], {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // 适当的文件类型
-      });
-
-      // 创建下载链接并模拟点击
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.href = url;
-      link.download = `${originalQuestion}-教学设计.docx`;  // 文件名
-      document.body.appendChild(link);
-      link.click();
-
-      // 清理
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     } catch (err: any) {
       ElNotification({ title: '生成失败', message: err.toString(), type: 'error' });
     } finally {
