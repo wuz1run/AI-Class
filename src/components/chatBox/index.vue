@@ -193,11 +193,7 @@ async function messageSent() {
       const response = await downloadDocAPI(payload);
       const fileUrl = response.download_url;
       if (fileUrl) {
-        const link = document.createElement("a");
-        link.href = fileUrl;
-        link.download = "教学设计.docx";
-        document.body.appendChild(link);
-        link.click();
+        window.open(fileUrl, "_blank");
       } else {
         console.error("文件未找到");
       }
