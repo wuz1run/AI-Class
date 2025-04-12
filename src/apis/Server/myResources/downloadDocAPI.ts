@@ -7,7 +7,7 @@ const downloadDocAPI = async (jsonData: string) => {
 
     try {
         const response = await pythonrequest(url, {
-            method: "get",
+            method: "post",
             headers: {
                 "Content-Type": "application/json",
                 'Authorization': `Bearer ${token}`
