@@ -73,7 +73,7 @@ const loadPredictions = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get('http://26eb465d.r31.cpolar.top/api/v1/predictions/');
+    const response = await axios.get('/api1/v1/predictions/');
     predictions.value = response.data;
   } catch (err: any) {
     error.value = `加载预测历史失败: ${err.message}`;
@@ -87,7 +87,7 @@ const createPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.post('http://26eb465d.r31.cpolar.top/api/v1/predictions/', newPredictionRequest.value);
+    const response = await axios.post('/api1/v1/predictions/', newPredictionRequest.value);
     selectedPrediction.value = response.data;
     await loadPredictions(); // 重新加载预测列表
     return response.data;
@@ -104,7 +104,7 @@ const viewPrediction = async (id: string) => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://26eb465d.r31.cpolar.top/api/v1/predictions/${id}`);
+    const response = await axios.get(`/api1/v1/predictions/${id}`);
     selectedPrediction.value = response.data;
     predictionId.value = id;
     // 清空学生和班级数据
@@ -128,7 +128,7 @@ const viewStudentPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://26eb465d.r31.cpolar.top/api/v1/predictions/${predictionId.value}/student/${studentId.value}`);
+    const response = await axios.get(`/api1/v1/predictions/${predictionId.value}/student/${studentId.value}`);
     selectedStudentData.value = response.data;
     // 清空班级数据
     selectedClassData.value = null;
@@ -150,7 +150,7 @@ const viewClassPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://26eb465d.r31.cpolar.top/api/v1/predictions/${predictionId.value}/class/${classId.value}`);
+    const response = await axios.get(`/api1/v1/predictions/${predictionId.value}/class/${classId.value}`);
     selectedClassData.value = response.data;
     // 清空学生数据
     selectedStudentData.value = null;
