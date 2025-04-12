@@ -206,7 +206,8 @@ async function messageSent() {
 
       // 调用接口来下载教案的 Word 文档
       const response = await downloadDocAPI(payload);
-
+      console.log(response['download_url']);
+      console.log(response)
       // 创建一个 Blob 对象
     } catch (err: any) {
       ElNotification({ title: '生成失败', message: err.toString(), type: 'error' });
