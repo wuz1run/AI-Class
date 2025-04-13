@@ -3,7 +3,7 @@
     <div class="header">
       <div class="logo">
         <i class="fas fa-chart-line"></i>
-        <h1>学生成绩预测系统</h1>
+        <h1>智能学情分析系统</h1>
       </div>
     </div>
 
@@ -106,7 +106,7 @@
 
             <!-- 学生查询 -->
             <div class="query-student">
-              <h3><i class="fas fa-user-graduate"></i> 学生成绩查询</h3>
+              <h3><i class="fas fa-user-graduate"></i> 学生预测成绩查询</h3>
               <div class="form-group">
                 <label>学生ID:</label>
                 <div class="input-with-icon">
@@ -115,13 +115,13 @@
                 </div>
               </div>
               <button class="primary-button" @click="viewStudentPrediction" :disabled="loading">
-                <i class="fas fa-search"></i> 查询学生成绩
+                <i class="fas fa-search"></i> 查询预测学生成绩
               </button>
             </div>
 
             <!-- 班级查询 -->
             <div class="query-class">
-              <h3><i class="fas fa-users"></i> 班级成绩查询</h3>
+              <h3><i class="fas fa-users"></i> 班级预测成绩查询</h3>
               <div class="form-group">
                 <label>班级ID:</label>
                 <div class="input-with-icon">
@@ -130,7 +130,7 @@
                 </div>
               </div>
               <button class="primary-button" @click="viewClassPrediction" :disabled="loading">
-                <i class="fas fa-search"></i> 查询班级成绩
+                <i class="fas fa-search"></i> 查询预测班级成绩
               </button>
             </div>
           </div>
@@ -142,8 +142,8 @@
         <div v-if="!selectedStudentData && !selectedClassData" class="welcome-panel">
           <div class="welcome-content">
             <i class="fas fa-chart-bar welcome-icon"></i>
-            <h2>欢迎使用学生成绩预测系统</h2>
-            <p>通过左侧面板创建新预测或查询已有的预测结果</p>
+            <h2>欢迎使用智能学情分析系统</h2>
+            <p>通过左侧面板预测学生下一次考试成绩并分析</p>
           </div>
         </div>
 
