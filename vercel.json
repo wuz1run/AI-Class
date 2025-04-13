@@ -1,8 +1,14 @@
 {
   "rewrites": [
+    // 保留原始API代理
     {
       "source": "/api/(.*)",
       "destination": "http://106.55.62.201:8080/$1"
+    },
+    // 新增第二个API代理规则
+    {
+      "source": "/cpolar-api/(.*)",
+      "destination": "http://40944903.r31.cpolar.top/api1/v1/$1"
     }
   ]
 }

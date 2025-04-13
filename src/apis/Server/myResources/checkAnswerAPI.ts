@@ -5,7 +5,7 @@ const checkAnswerAPI = async (data: {
     correct_answer: string
 }) => {
     const token = localStorage.getItem('token');
-    return request('https://40944903.r31.cpolar.top/api1/v1/essay/correct', {
+    return request('/cpolar-api/essay/correct', {
         method: 'POST',
         timeout:300000,
         headers: {

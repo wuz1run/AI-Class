@@ -330,7 +330,7 @@ const loadPredictions = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get('http://40944903.r31.cpolar.top/api1/v1/predictions/');
+    const response = await axios.get('/cpolar-api/predictions/');
     predictions.value = response.data;
   } catch (err: any) {
     error.value = `加载预测历史失败: ${err.message}`;
@@ -344,7 +344,7 @@ const createPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.post('http://40944903.r31.cpolar.top/api1/v1/predictions/', {
+    const response = await axios.post('/cpolar-api/predictions/', {
       ...newPredictionRequest.value,
       data_source: 'api',
       model_type: null
@@ -366,7 +366,7 @@ const viewPrediction = async (id: string) => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://40944903.r31.cpolar.top/api1/v1/predictions/${id}`);
+    const response = await axios.get(`/cpolar-api/predictions/${id}`);
     selectedPrediction.value = response.data;
     predictionId.value = id;
     selectedStudentData.value = null;
@@ -389,7 +389,7 @@ const viewStudentPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://40944903.r31.cpolar.top/api1/v1/predictions/${predictionId.value}/student/${studentId.value}`);
+    const response = await axios.get(`/cpolar-api/predictions/${predictionId.value}/student/${studentId.value}`);
     console.log('API响应数据：', response.data);
     selectedStudentData.value = response.data;
     console.log('预测分数：', selectedStudentData.value.predicted_scores);
@@ -412,7 +412,7 @@ const viewClassPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`http://40944903.r31.cpolar.top/api1/v1/predictions/${predictionId.value}/class/${classId.value}`);
+    const response = await axios.get(`/cpolar-api/predictions/${predictionId.value}/class/${classId.value}`);
     selectedClassData.value = response.data;
     selectedStudentData.value = null;
   } catch (err: any) {
