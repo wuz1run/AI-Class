@@ -2,7 +2,7 @@
 <template>
   <div class="flex h-screen w-full bg-base-200 relative">
     <!-- 侧边栏话题列表 -->
-    <div class="card bg-base-100 w-[200px] shadow-md">
+    <div class="card bg-base-100 w-[300px] shadow-md">
       <div class="card-body">
         <div class="flex justify-between items-center mb-2">
           <h2 class="card-title">会话列表</h2>

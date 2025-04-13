@@ -6,7 +6,7 @@ export default defineConfig({
   server:{
     proxy:{
       '/api': {
-        target:'http://2f70ce8a.r31.cpolar.top',
+        target:'http://106.55.62.201:8080',
         // target:'http://sakit.usemock.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, "")

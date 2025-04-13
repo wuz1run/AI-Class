@@ -1,4 +1,4 @@
-<template>
+ <template>
 <div class="flex flex-col mt-4 gap-5">
   <div class="flex">
     <p class="text-3xl text-purple-800">我的课表</p>

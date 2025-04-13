@@ -101,7 +101,7 @@ const sendVerificationCode = () => {
   isSendingCode.value = true;
   countdown.value = 10;
 
-  useRequest(()=>sendVerificationCodeAPI({email:info.email}),{
+  useRequest(()=>sendVerificationCodeAPI(info.email),{
     onSuccess(res){
       if(res.code===200){
         ElNotification({title: 'Success', message: "验证码发送成功", type: 'success',});

@@ -141,6 +141,7 @@ onMounted(() => {
 </script>
 
 <template>
+
   <div class="preview-container">
     <div class="stats-header">
       <h1>习题预览</h1>
@@ -166,8 +167,9 @@ onMounted(() => {
       <el-card
           v-for="(quiz, index) in quizList"
           :key="index"
-          class="quiz-item"
+          class="quiz-item w-full h-full"
           shadow="hover"
+
       >
         <div class="card-header">
           <el-checkbox
@@ -213,7 +215,7 @@ onMounted(() => {
       <div class="flex items-center gap-4">
         <select
             v-model="selectedClass"
-            class="select select-bordered select-sm w-96"
+            class="select select-bordered select-sm w-1024px h-256px"
             :disabled="!classes.length"
         >
           <option disabled value="">请选择班级</option>
@@ -249,7 +251,10 @@ onMounted(() => {
   margin: 0 auto;
   padding: 20px;
 }
-
+.select{
+  width:1024px;
+  height:64px;
+}.text-16xl
 .stats-header {
   margin-bottom: 30px;
   text-align: center;
@@ -286,6 +291,7 @@ onMounted(() => {
 .quiz-item {
   transition: all 0.2s ease;
   border-radius: 8px;
+  width:1024px;
 }
 
 .quiz-item:hover {

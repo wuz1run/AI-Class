@@ -60,7 +60,7 @@ const routes = [
     },
     {
         path: "/",
-        component: home
+        component: login
     },
     {
         path: "/studentQuizView",

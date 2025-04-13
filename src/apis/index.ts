@@ -67,8 +67,9 @@ export {
     getStudentClassesAPI,//self-made
     studentGetQuizAPI,//self-made
     getTestIDAPI,//self-made
+    checkAnswerAPI,//self-made
+    downloadDocAPI,//self-made
     getAIResponseStreamAPI,//self-made
-    downloadDocAPI,
     createDirectoryAPI,//Maybe Unused
     getFileListAPI,//Maybe Unused
     getFileInfoAPI,//Maybe Unused
@@ -84,6 +85,4 @@ export {
     restoreFileAPI,//Maybe Unused
     completelyDelAPI,//Maybe Unused
     sendVerificationCodeAPI,//Maybe Unused
-    checkAnswerAPI,
-
 }

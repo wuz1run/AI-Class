@@ -1,15 +1,15 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-    baseURL: 'https://ai.zirun.xyz/v1',
-    apiKey: 'AIzaSyAVhEv72y99jA-kMQEd_3j8Nnv3ePuQVYY',
+    baseURL: 'https://api.deepseek.com',
+    apiKey: 'sk-aa305f75e074474f9cf07e445aa0ce9a',
     dangerouslyAllowBrowser: true
 });
 
 export async function* getAIResponseStreamAPI(messages: any[]) {
     const stream = await openai.chat.completions.create({
         messages: messages,
-        model: "gemini-1.5-pro",
+        model: "deepseek-chat",
         stream: true
     });
 

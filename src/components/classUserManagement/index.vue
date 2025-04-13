@@ -1,158 +1,166 @@
 <template>
-  <div class="flex flex-col mx-auto mt-8 max-w-4xl gap-6 px-4">
-    <!-- 标题 -->
-    <h1 class="text-2xl font-bold text-gray-800">班级管理</h1>
-
-    <!-- 班级选择区域 -->
-    <div>
-      <h2 class="text-lg font-semibold text-gray-700 mb-2">选择班级</h2>
-      <div class="flex items-center gap-4">
-        <select
-            v-model="selectedClass"
-            @change="loadClassMembers"
-            class="select select-bordered select-sm w-96 bg-white text-gray-800 rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-400 transition text-center"
-            :disabled="!classes.length"
-        >
-          <option disabled value="">请选择班级</option>
-          <option v-for="cls in classes" :key="cls.classid" :value="cls.classid">
-            {{ cls.classname }}
-          </option>
-        </select>
-
-        <span v-if="membersLoading" class="text-sm text-gray-500 flex items-center gap-1">
-          <el-icon class="animate-spin"><Loading /></el-icon>
-          加载中...
-        </span>
-      </div>
-    </div>
-
-    <!-- 成员列表 -->
-    <div v-if="selectedClass" class="member-list max-h-[500px] overflow-y-auto">
-      <h2 class="text-lg font-semibold text-gray-700 mb-2">成员列表</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-            v-for="member in members"
-            :key="member.userid"
-            class="bg-white p-6 rounded-2xl shadow-md border border-gray-200 hover:shadow-lg hover:border-purple-400 transform hover:scale-[1.02] transition-all cursor-pointer"
-            @click="selectMember(member)"
-        >
-          <div class="flex items-center gap-6 w-full px-2">
-            <!-- 头像 -->
-            <div
-                class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-200 to-purple-400 text-white font-bold flex items-center justify-center text-xl shadow-sm"
+  <!-- 外层容器 -->
+  <div class="bg-gray-50 p-8 min-h-screen w-[1500px] mx-auto">
+    <!-- 主内容容器 -->
+    <div class="mx-auto  w-full">
+      <!-- 班级选择区 -->
+      <div class="mb-12 flex flex-col items-center gap-8">
+        <div class="flex w-full flex-col items-center gap-6">
+          <!-- 选择框容器 -->
+          <div class="flex w-full items-center justify-center gap-4">
+            <select
+                v-model="selectedClass"
+                @change="loadClassMembers"
+                class="select select-bordered select-lg w-full max-w-md bg-white text-lg shadow-lg hover:shadow-xl transition-all"
+                :disabled="!classes.length"
             >
-              {{ member.username.charAt(0).toUpperCase() }}
-            </div>
-            <!-- 信息 -->
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-xl">{{ member.username }}</div>
-              <div class="text-gray-500 text-sm mt-1">ID: {{ member.userid }}</div>
-              <div class="text-gray-400 text-sm mt-1">
-                角色:
-                <span v-if="member.character === 0">学生</span>
-                <span v-else-if="member.character === 1">教师</span>
-                <span v-else>未知</span>
-              </div>
+              <option disabled value="">请选择班级</option>
+              <option
+                  v-for="cls in classes"
+                  :key="cls.classid"
+                  :value="cls.classid"
+              >
+                {{ cls.classname }}
+              </option>
+            </select>
 
+            <span v-if="membersLoading" class="text-gray-500">
+              <el-icon class="animate-spin"><Loading /></el-icon>
+              加载中...
+            </span>
+          </div>
+
+          <!-- 创建班级按钮 -->
+          <button
+              class="btn w-full max-w-xs bg-purple-600 px-8 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-purple-700"
+              @click="openDialog"
+          >
+            创建班级
+          </button>
+        </div>
+
+        <!-- 成员列表 -->
+        <div class="w-full">
+          <div v-if="selectedClass" class="mx-auto w-full max-w-3xl">
+            <div class="grid grid-cols-1 gap-6">
+              <div
+                  v-for="member in members"
+                  :key="member.userid"
+                  class="member-card mx-auto w-full max-w-2xl cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all hover:border-purple-400 hover:shadow-lg"
+                  @click="selectMember(member)"
+              >
+                <div class="flex items-center gap-6 w-full px-4">
+                  <!-- 头像 -->
+                  <div
+                      class="avatar w-16 h-16 rounded-full bg-gradient-to-br from-purple-200 to-purple-400 text-white font-bold flex items-center justify-center text-xl shadow-sm"
+                  >
+                    {{ member.username.charAt(0).toUpperCase() }}
+                  </div>
+                  <!-- 成员信息 -->
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-xl">{{ member.username }}</div>
+                    <div class="text-gray-500 text-sm mt-1">ID: {{ member.userid }}</div>
+                    <div class="text-gray-400 text-sm mt-1">
+                      角色:
+                      <span v-if="member.character === 0">学生</span>
+                      <span v-else-if="member.character === 1">教师</span>
+                      <span v-else>未知</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+              </div>
+            </div>
+
+          <!-- 空状态 -->
+          <div
+              v-if="!members.length && !membersLoading"
+              class="mx-auto mt-8 w-full max-w-xl rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500"
+          >
+            <el-icon class="mb-2 text-3xl text-purple-500"><User /></el-icon>
+            <p class="text-sm">
+              当前班级暂无成员，邀请学生使用邀请码：
+              <span
+                  class="select-none font-semibold text-purple-600 cursor-pointer hover:underline"
+                  @click="copyInviteCode"
+              >
+                {{ inviteCode }}
+              </span>
+              加入
+            </p>
+          </div>
+
+          <!-- 邀请码提示 -->
+          <div
+              v-else
+              class="mx-auto mt-8 w-full max-w-xl text-center text-sm text-gray-600"
+          >
+            邀请学生输入邀请码：
+            <span
+                class="select-none font-bold text-purple-600 cursor-pointer hover:underline"
+                @click="copyInviteCode"
+            >
+              {{ inviteCode }}
+            </span>
+            加入班级
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 空状态 -->
-    <div
-        v-if="!members.length && !membersLoading"
-        class="flex flex-col items-center justify-center text-center text-gray-500 p-6 bg-white rounded-xl border border-dashed border-gray-300 mt-6"
-    >
-      <el-icon class="text-3xl text-purple-500 mb-2"><User /></el-icon>
-      <p class="text-sm">
-        当前班级暂无成员，邀请学生使用邀请码：
-        <span
-            class="text-purple-600 font-semibold cursor-pointer hover:underline select-none"
-            @click="copyInviteCode"
-        >
-          {{ inviteCode }}
-        </span>
-        加入
-      </p>
-    </div>
+    <!-- 右侧浮窗（保持原有样式） -->
+  <div
+      v-if="selectedMember"
+      class="fixed right-0 top-0 w-[400px] h-screen bg-white shadow-2xl z-50 p-8 border-l border-gray-200 transition-transform duration-500 ease-in-out"
+      :style="{ transform: selectedMember ? 'translateX(0)' : 'translateX(100%)' }"
+  >
+    <h2 class="text-2xl font-bold text-purple-600 mb-4">{{ selectedMember.username }} 的详细信息</h2>
+    <p class="text-gray-700">ID: {{ selectedMember.userid }}</p>
+    <p class="text-gray-700 mt-1">
+      角色:
+      <span v-if="selectedMember.character === 0">学生</span>
+      <span v-else-if="selectedMember.character === 1">教师</span>
+      <span v-else>未知</span>
+    </p>
 
-    <!-- 邀请码 -->
-    <div v-else class="text-sm text-gray-600 mt-6">
-      邀请学生输入邀请码：
-      <span
-          class="text-purple-600 font-bold cursor-pointer hover:underline select-none"
-          @click="copyInviteCode"
-      >
-        {{ inviteCode }}
-      </span>
-      加入班级
-    </div>
-
-    <!-- 创建班级按钮 -->
     <button
-        class="self-start btn bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-md transition duration-200 mt-4"
-        @click="openDialog"
+        @click="closeMemberDetails"
+        class="mt-6 px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow transition duration-200"
     >
-      创建班级
+      关闭
     </button>
-
-    <!-- 成员浮窗 -->
-    <div
-        v-if="selectedMember"
-        class="fixed right-0 top-0 w-[400px] h-screen bg-white shadow-2xl z-50 p-8 border-l border-gray-200 transition-transform duration-500 ease-in-out"
-        :style="{ transform: selectedMember ? 'translateX(0)' : 'translateX(100%)' }"
-    >
-      <h2 class="text-2xl font-bold text-purple-600 mb-4">
-        {{ selectedMember.username }} 的详细信息
-      </h2>
-      <p class="text-gray-700">ID: {{ selectedMember.userid }}</p>
-      <p class="text-gray-700 mt-1">
-        角色:
-        <span v-if="selectedMember.character === 0">学生</span>
-        <span v-else-if="selectedMember.character === 1">教师</span>
-        <span v-else>未知</span>
-      </p>
-      <button
-          @click="closeMemberDetails"
-          class="mt-4 text-white bg-red-500 p-2 rounded-lg"
-      >
-        关闭
-      </button>
-    </div>
-
-    <!-- 创建班级弹窗 -->
-    <el-dialog v-model="dialogVisible" title="🆕 创建班级" width="30%">
-      <el-form :model="classForm" ref="formRef" label-width="80px" label-position="top">
-        <el-form-item
-            label="班级名称"
-            prop="className"
-            :rules="[
-            { required: true, message: '请输入班级名称', trigger: 'blur' },
-            { min: 2, max: 20, message: '长度在2到20个字符', trigger: 'blur' }
-          ]"
-        >
-          <el-input
-              v-model="classForm.className"
-              placeholder="请输入班级名称"
-              clearable
-          />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="isSubmitting" @click="handleConfirm">
-            确认创建
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
-</template>
 
+    <!-- 创建班级弹窗（保持原有样式） -->
+  <el-dialog v-model="dialogVisible" title="创建班级" width="30%">
+    <el-form :model="classForm" ref="formRef" label-width="80px" label-position="top">
+      <el-form-item
+          label="班级名称"
+          prop="className"
+          :rules="[
+          { required: true, message: '请输入班级名称', trigger: 'blur' },
+          { min: 2, max: 20, message: '长度在2到20个字符', trigger: 'blur' }
+        ]"
+      >
+        <el-input
+            v-model="classForm.className"
+            placeholder="请输入班级名称"
+            clearable
+        />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="isSubmitting" @click="handleConfirm">
+          确认创建
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
+</template>
 
 
 <script setup lang="ts">

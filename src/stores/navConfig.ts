@@ -11,18 +11,6 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
     {
-        name: '首页',
-        path: '/home',
-        roles: ['teacher'],
-        requireAuth: true
-    },
-    {
-        name: '首页',
-        path: '/student',
-        roles: ['student'],
-        requireAuth: true
-    },
-    {
         name: 'AI备课',
         path: '/chat',
         roles: ['teacher'],

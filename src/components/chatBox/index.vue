@@ -1,6 +1,6 @@
 <template>
   <div class="ml-6 mt-5">
-    <div id="chatBox" class="w-[78%] h-[77%] overflow-auto absolute bg-base-200">
+    <div id="chatBox" class="w-[90%] h-[77%] overflow-auto absolute bg-base-200">
       <<div v-for="(value, index) in chatMsg" class="mt-2">
       <div class="chat" :class="[chatMsg[index]['role'] === 'user' ? 'chat-end' : 'chat-start']">
         <div class="chat-image avatar">
