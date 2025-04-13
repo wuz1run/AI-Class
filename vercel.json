@@ -2,11 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://2f70ce8a.r31.cpolar.top/$1"
-    },
-    {
-      "source": "/api1/(.*)",
-      "destination": "http://26eb465d.r31.cpolar.top/$1"
+      "destination": "http://106.55.62.201:8080/$1"
     }
   ]
 }
