@@ -7,6 +7,12 @@
     {
       "source": "/cpolar-api/(.*)",
       "destination": "http://40944903.r31.cpolar.top/api1/v1/$1"
+    },
+    {
+      "rewrites": [
+        { "source": "/(.*)", "destination": "/" }
+      ]
     }
+
   ]
 }
