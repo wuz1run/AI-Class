@@ -13,6 +13,7 @@ const { jsonData } = storeToRefs(quizStore);
 const quizList = ref<Array<any>>([]);
 const isReleasing = ref(false);
 const selectAll = ref(false);
+const isDeleting = ref(false);
 interface ClassInfo {
   classid: number;
   classname: string;
@@ -122,7 +123,33 @@ const releaseQuiz = () => {
     }
   });
 }
+// 删除选中习题
+const deleteSelectedQuiz = () => {
+  const selectedQuestions = quizList.value.filter(item => item.selected);
 
+  if (selectedCount.value === 0) {
+    ElNotification({
+      title: '警告',
+      message: '请至少选择一个题目进行删除',
+      type: 'warning',
+    });
+    return;
+  }
+
+  isDeleting.value = true;
+  setTimeout(() => {
+    quizList.value = quizList.value.filter(item => !item.selected);
+    selectAll.value = false;
+
+    ElNotification({
+      title: 'Success',
+      message: '习题删除成功',
+      type: 'success',
+    });
+
+    isDeleting.value = false;
+  }, 800);
+}
 const loadClasses = async () => {
   try {
     const res = await getClassesAPI();
@@ -141,7 +168,6 @@ onMounted(() => {
 </script>
 
 <template>
-
   <div class="preview-container">
     <div class="stats-header">
       <h1>习题预览</h1>
@@ -167,9 +193,8 @@ onMounted(() => {
       <el-card
           v-for="(quiz, index) in quizList"
           :key="index"
-          class="quiz-item w-full h-full"
+          class="quiz-item"
           shadow="hover"
-
       >
         <div class="card-header">
           <el-checkbox
@@ -183,7 +208,7 @@ onMounted(() => {
                 size="small"
             >
               {{    quiz.type === 'choice' ? '选择题' :
-                    quiz.type === 'cloze' ? '填空题' :
+                quiz.type === 'cloze' ? '填空题' :
                     quiz.type === 'short_answer' ? '简答题' : '未知题型'
               }}
             </el-tag>
@@ -212,10 +237,10 @@ onMounted(() => {
           </div>
         </div>
       </el-card>
-      <div class="flex items-center gap-4">
+      <div class="class-selection">
         <select
             v-model="selectedClass"
-            class="select select-bordered select-sm w-1024px h-256px"
+            class="select select-bordered"
             :disabled="!classes.length"
         >
           <option disabled value="">请选择班级</option>
@@ -228,33 +253,42 @@ onMounted(() => {
           </option>
         </select>
 
-        <span v-if="membersLoading" class="text-sm text-gray-500">
-        <el-icon class="animate-spin"><Loading /></el-icon>
-        加载中...
-      </span>
+        <span v-if="membersLoading" class="loading-text">
+          <el-icon class="animate-spin"><Loading /></el-icon>
+          加载中...
+        </span>
       </div>
-      <el-button
-          @click="releaseQuiz"
-          :loading="isReleasing"
-          type="primary"
-          :disabled="selectedCount === 0"
-      >
-        发布选中习题 ({{ selectedCount }})
-      </el-button>
+      <div class="action-buttons">
+        <el-button
+            @click="releaseQuiz"
+            :loading="isReleasing"
+            type="primary"
+            :disabled="selectedCount === 0"
+        >
+          发布选中习题 ({{ selectedCount }})
+        </el-button>
+        <el-button
+            @click="deleteSelectedQuiz"
+            :loading="isDeleting"
+            type="danger"
+            :disabled="selectedCount === 0"
+        >
+          删除选中习题 ({{ selectedCount }})
+        </el-button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .preview-container {
+  width: 100%;
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+  box-sizing: border-box;
 }
-.select{
-  width:1024px;
-  height:64px;
-}.text-16xl
+
 .stats-header {
   margin-bottom: 30px;
   text-align: center;
@@ -269,6 +303,7 @@ onMounted(() => {
   background: #f5f7fa;
   border-radius: 4px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .stats-header h1 {
@@ -291,7 +326,7 @@ onMounted(() => {
 .quiz-item {
   transition: all 0.2s ease;
   border-radius: 8px;
-  width:1024px;
+  width: 100%;
 }
 
 .quiz-item:hover {
@@ -303,11 +338,13 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 .quiz-meta {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .question-content {
@@ -350,6 +387,11 @@ onMounted(() => {
   color: white;
   border-radius: 4px;
   margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.option-text {
+  word-break: break-word;
 }
 
 .answer-area {
@@ -360,11 +402,96 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .answer-text {
   font-family: monospace;
   font-size: 16px;
   color: #2c3e50;
+  word-break: break-word;
+}
+
+.class-selection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.select {
+  width: 100%;
+  max-width: 1024px;
+  height: 42px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  font-size: 14px;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 15px;
+}
+
+/* 响应式样式 */
+@media screen and (max-width: 768px) {
+  .preview-container {
+    padding: 15px 10px;
+  }
+
+  .selection-controls {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .stats {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .preview-container {
+    padding: 10px 5px;
+  }
+
+  .quiz-meta {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .question-text {
+    font-size: 15px;
+  }
+
+  .option-item {
+    padding: 8px;
+  }
+
+  .answer-area {
+    padding: 8px;
+  }
 }
 </style>

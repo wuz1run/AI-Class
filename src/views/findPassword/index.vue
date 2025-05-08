@@ -215,7 +215,7 @@ const findPass = () => {
       if (res.code === 200) {
         ElNotification({
           title: '成功',
-          message: res.msg + "，即将跳转到登录界面",
+          message: "即将跳转到登录界面",
           type: 'success',
           duration: 2000
         });
@@ -261,6 +261,7 @@ watch([() => info.pass1, () => info.pass2], ([new1, new2], [old1, old2]) => {
   background: linear-gradient(135deg, #8bc6ec 0%, #9599e2 100%);
   position: relative;
   overflow: hidden;
+  padding: 20px;
 }
 
 /* 浮动元素 */
@@ -321,10 +322,12 @@ watch([() => info.pass1, () => info.pass2], ([new1, new2], [old1, old2]) => {
 .card-container {
   z-index: 10;
   perspective: 1000px;
+  width: 100%;
+  max-width: 500px;
 }
 
 .card {
-  width: 500px;
+  width: 100%;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
@@ -590,5 +593,99 @@ watch([() => info.pass1, () => info.pass2], ([new1, new2], [old1, old2]) => {
 
 .submit-btn:active {
   transform: translateY(0);
+}
+
+/* 响应式设计 - 移动设备适配 */
+@media (max-width: 768px) {
+  .card {
+    width: 100%;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .card-header {
+    padding: 16px 16px 0;
+  }
+
+  .lock-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lock-icon i {
+    font-size: 24px;
+  }
+
+  .card-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .send-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .code-input {
+    letter-spacing: 2px;
+  }
+}
+
+/* 小型移动设备 */
+@media (max-width: 480px) {
+  .float-item:nth-child(3n) {
+    width: 80px;
+    height: 80px;
+  }
+
+  .lock-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .lock-icon i {
+    font-size: 20px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  .btn-text {
+    font-size: 14px;
+  }
+
+  .label-text {
+    font-size: 13px;
+  }
+
+  .submit-btn {
+    height: 46px;
+    font-size: 15px;
+  }
+}
+
+/* 平板设备 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .card {
+    width: 90%;
+    max-width: 500px;
+  }
+
+  .card-body {
+    padding: 20px;
+  }
 }
 </style>

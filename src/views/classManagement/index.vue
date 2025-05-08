@@ -10,8 +10,8 @@
       <div class="light-effect"></div>
     </div>
 
-    <!-- 侧边菜单切换按钮 (已下移) -->
-    <div class="menu-toggle" @click="toggleMenu">
+    <!-- 侧边菜单切换按钮 -->
+    <div class="menu-toggle" @click.stop="toggleMenu">
       <div class="menu-icon" :class="{ 'active': isMenuOpen }">
         <span></span>
         <span></span>
@@ -41,7 +41,7 @@
 
       <div class="menu-footer">
         <!-- 菜单收起按钮 -->
-        <div class="close-menu-btn" @click="toggleMenu">
+        <div class="close-menu-btn" @click.stop="toggleMenu">
           <div class="close-icon">
             <el-icon><ArrowLeft /></el-icon>
           </div>
@@ -51,7 +51,7 @@
     </div>
 
     <!-- 主内容区 -->
-    <div class="main-content" :class="{ 'menu-opened': isMenuOpen }">
+    <div class="main-content" :class="{ 'menu-opened': isMenuOpen && !isMobile }">
       <div class="content-header">
         <h1 class="page-title">用户管理中心</h1>
         <div class="header-actions">
@@ -71,22 +71,181 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { myMenu, classUserManagement } from "../../components"
 
 // 状态管理
-const isMenuOpen = ref<boolean>(true);
+const isMenuOpen = ref(false); // 在移动端默认收起菜单
+const isMobile = ref(window.innerWidth <= 768);
+const isTablet = ref(window.innerWidth > 768 && window.innerWidth <= 1024);
 
 // 菜单相关方法
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
+
+  // 在移动端打开菜单时禁止body滚动
+  if (isMobile.value) {
+    if (isMenuOpen.value) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+
+      // 添加延迟，确保过渡动画完成后才移除类
+      setTimeout(() => {
+        document.body.classList.remove('menu-open');
+      }, 300);
+    }
+  }
 };
 
-// 动态背景元素生成
-const initAnimatedBackground = () => {
-  // 这部分可以在实际项目中使用onMounted钩子实现
-  // 此处省略实现，样式中已包含动画效果
+// 监听窗口大小变化
+const handleResize = () => {
+  const oldIsMobile = isMobile.value;
+  const oldIsTablet = isTablet.value;
+
+  isMobile.value = window.innerWidth <= 768;
+  isTablet.value = window.innerWidth > 768 && window.innerWidth <= 1024;
+
+  // 如果从移动端变为桌面端，确保body不再被禁止滚动
+  if (oldIsMobile && !isMobile.value) {
+    document.body.classList.remove('menu-open');
+  }
+
+  // 在小屏幕上默认收起菜单
+  if (!oldIsMobile && isMobile.value && isMenuOpen.value) {
+    isMenuOpen.value = false;
+  }
+
+  // 如果从移动设备变为桌面，且菜单处于关闭状态，自动打开菜单
+  if ((oldIsMobile || oldIsTablet) && !isMobile.value && !isTablet.value && !isMenuOpen.value) {
+    isMenuOpen.value = true;
+  }
 };
+
+// 点击遮罩层关闭菜单的处理函数
+const handleOutsideClick = (event) => {
+  if (isMobile.value && isMenuOpen.value) {
+    // 检查点击是否在菜单外部
+    const sideMenu = document.querySelector('.side-menu');
+    const menuToggle = document.querySelector('.menu-toggle');
+
+    if (sideMenu && !sideMenu.contains(event.target) &&
+        menuToggle && !menuToggle.contains(event.target)) {
+      isMenuOpen.value = false;
+
+      // 添加延迟，确保过渡动画完成后才移除类
+      setTimeout(() => {
+        document.body.classList.remove('menu-open');
+      }, 300);
+    }
+  }
+};
+
+// 处理触摸事件（优化移动端体验）
+const handleTouchStart = (event) => {
+  // 获取触摸起始点
+  const touchStartX = event.touches[0].clientX;
+
+  // 如果触摸起始点在屏幕左侧边缘附近，可以考虑滑动打开菜单
+  if (isMobile.value && !isMenuOpen.value && touchStartX < 30) {
+    const handleTouchMove = (moveEvent) => {
+      const touchMoveX = moveEvent.touches[0].clientX;
+      const diffX = touchMoveX - touchStartX;
+
+      // 如果右滑距离超过50px，打开菜单
+      if (diffX > 50) {
+        isMenuOpen.value = true;
+        document.body.classList.add('menu-open');
+
+        // 移除事件监听器
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // 移除事件监听器
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+
+    // 添加临时事件监听器
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+  }
+
+  // 如果菜单已打开，监听从右向左滑动关闭菜单
+  if (isMobile.value && isMenuOpen.value) {
+    const sideMenu = document.querySelector('.side-menu');
+
+    // 如果触摸点不在菜单内，不处理
+    if (sideMenu && !sideMenu.contains(event.target)) {
+      const handleTouchMove = (moveEvent) => {
+        const touchMoveX = moveEvent.touches[0].clientX;
+        const diffX = touchStartX - touchMoveX;
+
+        // 如果左滑距离超过50px，关闭菜单
+        if (diffX > 50) {
+          isMenuOpen.value = false;
+
+          // 添加延迟，确保过渡动画完成后才移除类
+          setTimeout(() => {
+            document.body.classList.remove('menu-open');
+          }, 300);
+
+          // 移除事件监听器
+          document.removeEventListener('touchmove', handleTouchMove);
+          document.removeEventListener('touchend', handleTouchEnd);
+        }
+      };
+
+      const handleTouchEnd = () => {
+        // 移除事件监听器
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+
+      // 添加临时事件监听器
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+  }
+};
+
+// 生命周期钩子
+onMounted(() => {
+  // 初始化时检查设备类型
+  handleResize();
+
+  // 添加窗口调整大小和点击事件监听器
+  window.addEventListener('resize', handleResize);
+  document.addEventListener('click', handleOutsideClick);
+  document.addEventListener('touchstart', handleTouchStart, { passive: true });
+
+  // 在桌面端自动打开菜单，移动端默认收起
+  isMenuOpen.value = !isMobile.value;
+
+  // 设置viewport meta标签确保移动端正确显示
+  const viewport = document.querySelector('meta[name="viewport"]');
+  if (!viewport) {
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+    document.head.appendChild(meta);
+  } else {
+    viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+  }
+});
+
+onBeforeUnmount(() => {
+  // 移除事件监听器
+  window.removeEventListener('resize', handleResize);
+  document.removeEventListener('click', handleOutsideClick);
+  document.removeEventListener('touchstart', handleTouchStart);
+
+  // 确保在组件卸载时移除body上的class
+  document.body.classList.remove('menu-open');
+});
 </script>
 
 <style scoped>
@@ -441,6 +600,607 @@ const initAnimatedBackground = () => {
 
   .side-menu.menu-opened + .main-content {
     transform: translateX(240px);
+  }
+}
+/* 媒体查询 - 响应式适配 */
+/* 平板设备 (768px - 1024px) */
+@media (max-width: 1024px) {
+  .side-menu {
+    width: 220px;
+    transform: translateX(-220px);
+  }
+
+  .main-content.menu-opened {
+    margin-left: 220px;
+  }
+
+  .page-title {
+    @apply text-xl;
+  }
+
+  .content-body {
+    @apply p-4;
+  }
+}
+
+/* 手机设备 (小于768px) */
+@media (max-width: 768px) {
+  .side-menu {
+    width: 240px;
+    transform: translateX(-240px);
+    top: 0;
+    height: 100vh;
+    margin-top: 0;
+  }
+
+  .main-content {
+    width: 100%;
+  }
+
+  .main-content.menu-opened {
+    margin-left: 0;
+    overflow: hidden;
+  }
+
+  /* 手机端菜单打开时添加遮罩层 */
+  .side-menu.menu-opened:after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 240px;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+  }
+
+  /* 调整页面标题和头部布局 */
+  .content-header {
+    @apply py-3 px-4;
+  }
+
+  .page-title {
+    @apply text-lg;
+  }
+}
+
+/* 小屏手机设备 (小于480px) */
+@media (max-width: 480px) {
+  .side-menu {
+    width: 85%;
+    max-width: 280px;
+  }
+
+  .menu-toggle {
+    @apply bottom-4 left-4 w-9 h-9;
+  }
+
+  .page-title {
+    @apply text-base;
+  }
+
+  /* 动态背景元素调整 */
+  .shape {
+    transform: scale(0.7);
+  }
+
+  .content-body {
+    @apply p-3;
+  }
+
+  /* 菜单项文字大小调整 */
+  .menu-text {
+    @apply text-sm;
+  }
+}
+/* 添加到已有的CSS中 */
+/* 手机端菜单覆盖模式 */
+@media (max-width: 768px) {
+  /* 菜单打开时的主内容固定 */
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  /* 侧边菜单全屏覆盖 */
+  .side-menu.menu-opened + .main-content {
+    transform: translateX(0);
+    filter: blur(2px);
+    pointer-events: none;
+  }
+}
+
+/* 平板设备优化 (768px - 1024px) */
+@media (max-width: 1024px) {
+  .side-menu {
+    width: 220px;
+    transform: translateX(-220px);
+  }
+
+  .main-content.menu-opened {
+    margin-left: 220px;
+  }
+
+  .page-title {
+    @apply text-xl;
+  }
+
+  .content-body {
+    @apply p-4;
+  }
+
+  /* 提高平板上的触摸区域大小 */
+  .menu-item {
+    @apply py-4;
+  }
+
+  /* 调整平板上的动态背景元素 */
+  .shape {
+    opacity: 0.15;
+    transform: scale(0.85);
+  }
+}
+
+/* 手机设备优化 (小于768px) */
+@media (max-width: 768px) {
+  /* 基础设置 */
+  .side-menu {
+    width: 270px;
+    transform: translateX(-270px);
+    top: 0;
+    height: 100vh;
+    margin-top: 0;
+    z-index: 50;
+  }
+
+  .main-content {
+    width: 100%;
+    margin-left: 0 !important; /* 确保手机上不会有左边距 */
+  }
+
+  /* 菜单打开时添加遮罩和效果 */
+  .side-menu.menu-opened {
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 添加遮罩层 */
+  .side-menu.menu-opened:after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 270px;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 手机端菜单打开时锁定主内容滚动 */
+  .side-menu.menu-opened ~ .main-content {
+    position: fixed;
+    width: 100%;
+  }
+
+  /* 调整页面标题和头部布局 */
+  .content-header {
+    @apply py-3 px-4 flex-wrap;
+  }
+
+  .page-title {
+    @apply text-lg;
+  }
+
+  /* 优化通知图标在手机上的展示 */
+  .notification-bell {
+    @apply w-9 h-9;
+  }
+
+  /* 调整菜单项在手机上的大小 */
+  .menu-item {
+    @apply py-4 px-5;
+  }
+
+  /* 优化菜单切换按钮的位置和样式 */
+  .menu-toggle {
+    @apply bottom-5 left-5 w-12 h-12 shadow-lg;
+    z-index: 60; /* 确保在遮罩层之上 */
+  }
+
+  /* 动态背景元素调整 */
+  .animated-background {
+    opacity: 0.2;
+  }
+
+  .shape {
+    opacity: 0.1;
+  }
+}
+
+/* 小屏手机设备优化 (小于480px) */
+@media (max-width: 480px) {
+  .side-menu {
+    width: 85%;
+    max-width: 280px;
+  }
+
+  .side-menu.menu-opened:after {
+    left: 85%;
+    max-left: 280px;
+  }
+
+  .menu-toggle {
+    @apply bottom-4 left-4 w-10 h-10;
+  }
+
+  .page-title {
+    @apply text-base mb-2 w-full;
+  }
+
+  .header-actions {
+    @apply mt-1 w-full justify-end;
+  }
+
+  /* 动态背景元素微调 */
+  .shape {
+    transform: scale(0.6);
+  }
+
+  .content-body {
+    @apply p-3;
+  }
+
+  /* 菜单项文字大小调整 */
+  .menu-text {
+    @apply text-sm;
+  }
+
+  /* 增强小屏上的触摸区域 */
+  .menu-item {
+    @apply py-4;
+  }
+
+  .close-menu-btn {
+    @apply py-3;
+  }
+
+  /* 优化动画 */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition-duration: 250ms;
+  }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .side-menu {
+    overflow-y: auto;
+  }
+
+  .menu-items {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .menu-item {
+    @apply py-2;
+  }
+
+  .menu-header {
+    @apply py-3 px-4;
+  }
+
+  .menu-footer {
+    @apply py-2;
+  }
+
+  /* 调整菜单切换按钮位置 */
+  .menu-toggle {
+    @apply bottom-3 left-3;
+  }
+}
+
+/* 安全区域适配 (适应各种刘海屏、打孔屏) */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .side-menu {
+    padding-top: env(safe-area-inset-top);
+    height: calc(100vh - env(safe-area-inset-bottom));
+  }
+
+  .content-header {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+
+  .menu-toggle {
+    bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .dashboard-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+
+  .side-menu {
+    @apply bg-gray-900;
+  }
+
+  .menu-header, .menu-footer {
+    @apply border-gray-800;
+  }
+
+  .menu-text {
+    @apply text-gray-300;
+  }
+
+  .menu-item:hover {
+    @apply bg-gray-800;
+  }
+
+  .menu-item.active {
+    @apply bg-gray-800 border-blue-500;
+  }
+
+  .page-title {
+    background: linear-gradient(45deg, #e9ecef, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .notification-bell {
+    @apply bg-gray-800;
+  }
+
+  .menu-toggle {
+    @apply bg-gray-900;
+  }
+}
+/* 全局响应式调整 */
+@media (max-width: 1024px) {
+  .side-menu {
+    width: 240px;
+    transform: translateX(-240px);
+  }
+
+  .main-content.menu-opened {
+    margin-left: 240px;
+  }
+
+  /* 减小内容区域内边距 */
+  .content-body {
+    padding: 1rem;
+  }
+
+  /* 减小动态背景元素的大小 */
+  .shape {
+    transform: scale(0.85);
+    opacity: 0.15;
+  }
+}
+
+/* 平板设备优化 (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* 增大按钮和交互元素的触摸区域 */
+  .menu-item {
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+
+  .close-menu-btn {
+    padding: 0.625rem 1rem;
+  }
+
+  /* 调整标题大小 */
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  /* 优化布局空间 */
+  .menu-header {
+    padding: 1.25rem;
+  }
+}
+
+/* 手机设备优化 (小于768px) */
+@media (max-width: 768px) {
+  /* 基础设置 */
+  .side-menu {
+    width: 280px;
+    transform: translateX(-280px);
+    top: 0;
+    height: 100vh;
+    margin-top: 0;
+    z-index: 50;
+    box-shadow: none;
+  }
+
+  .main-content {
+    width: 100%;
+    margin-left: 0 !important; /* 确保手机上不会有左边距 */
+  }
+
+  /* 菜单展开时的效果 */
+  .side-menu.menu-opened {
+    transform: translateX(0);
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 菜单展开时添加遮罩层 */
+  .side-menu.menu-opened::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 280px;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 菜单展开时固定主内容区，防止滚动 */
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  /* 优化页面头部 */
+  .content-header {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  /* 优化菜单交互元素 */
+  .menu-toggle {
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: 3rem;
+    height: 3rem;
+    z-index: 60; /* 确保在遮罩层之上 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .menu-item {
+    padding: 0.875rem 1.25rem;
+  }
+
+  /* 减弱动态背景元素 */
+  .animated-background {
+    opacity: 0.15;
+  }
+
+  .shape {
+    opacity: 0.1;
+    transform: scale(0.7);
+  }
+
+  /* 优化动画效果 */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition-duration: 250ms;
+  }
+}
+
+/* 小屏手机设备优化 (小于480px) */
+@media (max-width: 480px) {
+  .side-menu {
+    width: 85%;
+    max-width: 300px;
+  }
+
+  .side-menu.menu-opened::after {
+    left: 85%;
+    max-left: 300px;
+  }
+
+  /* 调整菜单切换按钮 */
+  .menu-toggle {
+    bottom: 1rem;
+    left: 1rem;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  /* 调整页面标题 */
+  .page-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+
+  .header-actions {
+    margin-top: 0.25rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* 减小内容区域内边距 */
+  .content-body {
+    padding: 0.75rem;
+  }
+
+  /* 调整菜单文字大小 */
+  .menu-text {
+    font-size: 0.875rem;
+  }
+
+  /* 增强小屏上的触摸区域 */
+  .menu-item {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .close-menu-btn {
+    padding: 0.75rem;
+  }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .side-menu {
+    overflow-y: auto;
+  }
+
+  .menu-items {
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  .menu-item {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .menu-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .menu-footer {
+    padding: 0.5rem 1rem;
+  }
+
+  /* 调整菜单切换按钮位置 */
+  .menu-toggle {
+    bottom: 0.75rem;
+    left: 0.75rem;
+  }
+}
+
+/* 安全区域适配 (适应各种刘海屏、打孔屏) */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .side-menu {
+    padding-top: env(safe-area-inset-top);
+    height: calc(100vh - env(safe-area-inset-bottom));
+  }
+
+  .content-header {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+
+  .menu-toggle {
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+    left: max(1.25rem, env(safe-area-inset-left));
+  }
+
+  .content-body {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
   }
 }
 </style>

@@ -6,7 +6,7 @@
 
     <div class="flex-1 flex flex-col items-center justify-center relative">
       <h2 class="main-title">
-        <span>A</span><span>I</span><span>驱</span><span>动</span><span>的</span><span>备</span><span>课</span><span>系</span><span>统</span>
+        <span>贝</span><span>壳</span><span>精</span><span>灵</span><span>——</span><span>备</span><span>课</span><span>无</span><span>忧</span>
       </h2>
     </div>
 
@@ -200,6 +200,7 @@ const getUserInfo = () => {
 
 <style scoped>
 /* 基础样式重置 */
+/* 基础样式重置 */
 html, body {
   margin: 0;
   padding: 0;
@@ -229,8 +230,6 @@ html, body {
   opacity: 1;
   z-index: 0; /* 关键修改 */
 }
-
-
 
 .floating-elements {
   position: absolute;
@@ -529,5 +528,166 @@ html, body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* 响应式布局 - 平板设备 */
+@media screen and (max-width: 1024px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .main-title {
+    position: relative;
+    top: 0;
+    left: 0;
+    transform: none;
+    font-size: 3rem;
+    margin: 2rem auto;
+  }
+
+  .login-card {
+    width: 70%;
+    margin: 0 auto;
+    align-self: center;
+  }
+
+  .app-download {
+    position: static;
+    margin: 2rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .qrcode-container {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin-top: 1rem;
+    width: 8rem;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
+/* 响应式布局 - 手机设备 */
+@media screen and (max-width: 768px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .login-container {
+    height: auto;
+    min-height: 100vh;
+    padding: 1rem 0;
+  }
+
+  .main-title {
+    font-size: 2rem;
+    margin: 1.5rem auto;
+  }
+
+  .login-card {
+    width: 85%;
+    padding: 1.5rem;
+    margin: 0 auto;
+  }
+
+  .card-title {
+    font-size: 2rem;
+  }
+
+  .app-download {
+    margin-top: 2rem;
+  }
+
+  .app-icon {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .floating-element {
+    font-size: 12px !important;
+  }
+}
+
+/* 超小屏幕设备 */
+@media screen and (max-width: 480px) {
+  .main-title {
+    font-size: 1.7rem;
+  }
+
+  .login-card {
+    width: 90%;
+    padding: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-text {
+    font-size: 0.8rem;
+  }
+
+  .input-field {
+    font-size: 0.9rem;
+  }
+
+  .link-text {
+    font-size: 0.8rem;
+  }
+
+  .login-btn {
+    padding: 0.6rem;
+  }
+
+  .download-text {
+    font-size: 0.8rem;
+  }
+
+  .app-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .qrcode-container {
+    width: 7rem;
+  }
+
+  .qrcode-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* 处理横屏模式 */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .login-container {
+    flex-direction: row;
+    justify-content: center;
+    overflow-y: auto;
+  }
+
+  .main-title {
+    display: none;
+  }
+
+  .login-card {
+    margin: 0 1rem;
+    width: 60%;
+    max-width: 350px;
+  }
+
+  .app-download {
+    position: static;
+    margin: 0;
+    align-self: center;
+  }
+
+  .floating-element {
+    display: none;
+  }
 }
 </style>

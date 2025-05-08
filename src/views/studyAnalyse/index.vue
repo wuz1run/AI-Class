@@ -68,6 +68,23 @@
             <button class="primary-button" @click="createPrediction" :disabled="loading">
               <i class="fas fa-bolt"></i> 创建新预测
             </button>
+            <div class="form-group">
+              <input
+                  type="file"
+                  ref="fileInput"
+                  hidden
+                  accept=".xlsx,.xls"
+                  @change="uploadStudentData"
+              >
+              <button
+                  class="primary-button"
+                  @click="$refs.fileInput.click()"
+                  :disabled="loading"
+                  style="margin-top: 12px;"
+              >
+                <i class="fas fa-file-excel"></i> 上传学生数据
+              </button>
+            </div>
           </div>
 
           <!-- 预测历史列表 -->
@@ -139,7 +156,7 @@
 
       <div class="content">
         <!-- 欢迎页面 -->
-        <div v-if="!selectedStudentData && !selectedClassData" class="welcome-panel">
+        <div v-if="!selectedPrediction && !selectedStudentData && !selectedClassData" class="welcome-panel">
           <div class="welcome-content">
             <i class="fas fa-chart-bar welcome-icon"></i>
             <h2>欢迎使用智能学情分析系统</h2>
@@ -198,29 +215,54 @@
                 </div>
               </div>
             </div>
-          </div>
+            <!-- 添加三个图表容器 -->
+            <div class="charts-container">
+              <!-- 饼图 -->
+              <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> 预测成绩分布</h3>
+                <div ref="pieChartRef" class="chart-inner"></div>
+              </div>
 
-          <!-- 薄弱点详细分析 -->
-          <div class="weakness-analysis card">
-            <h3><i class="fas fa-exclamation-triangle"></i> 薄弱点详细分析</h3>
-            <div v-if="Object.keys(selectedStudentData.predicted_weaknesses || {}).length > 0" class="weakness-bars">
-              <div v-for="(accuracy, questionType) in selectedStudentData.predicted_weaknesses"
-                   :key="questionType" class="weakness-bar">
-                <div class="weakness-label">{{ questionType }}</div>
-                <div class="progress-container">
-                  <div class="progress-bar" :style="{ width: `${accuracy * 100}%` }"></div>
-                  <div class="progress-text">{{ (accuracy * 100).toFixed(1) }}%</div>
-                </div>
+              <!-- 折线图 -->
+              <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> 预测成绩横向对比</h3>
+                <div ref="lineChartRef" class="chart-inner"></div>
+              </div>
+
+              <!-- 雷达图 -->
+              <div class="chart-card">
+                <h3><i class="fas fa-chart-radar"></i> 学科能力分布</h3>
+                <div ref="radarChartRef" class="chart-inner"></div>
               </div>
             </div>
-            <div v-else class="empty-state">
-              <i class="fas fa-check-circle"></i>
-              <p>该学生无明显薄弱点</p>
+            <!-- 薄弱点详细分析 -->
+            <div class="weakness-analysis card">
+              <h3><i class="fas fa-exclamation-triangle"></i> 薄弱点详细分析</h3>
+              <div
+                  v-if="
+    selectedStudentData?.predicted_weaknesses &&
+    Object.keys(selectedStudentData.predicted_weaknesses).length > 0
+  "
+                  class="weakness-bars"
+              >
+                <div v-for="(accuracy, questionType) in selectedStudentData.predicted_weaknesses"
+                     :key="questionType" class="weakness-bar">
+                  <div class="weakness-label">{{ questionType }}</div>
+                  <div class="progress-container">
+                    <div class="progress-bar" :style="{ width: `${accuracy * 100}%` }"></div>
+                    <div class="progress-text">{{ (accuracy * 100).toFixed(1) }}%</div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <p>该学生无明显薄弱点</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 修改后的班级预测结果部分 -->
+        <!-- 优化后的班级预测结果部分 -->
         <div v-if="selectedClassData" class="class-results">
           <div class="class-header">
             <h2><i class="fas fa-users"></i> 班级成绩分析</h2>
@@ -230,24 +272,48 @@
           </div>
 
           <div class="class-results-container">
-            <!-- 右侧班级数据卡片区域 -->
-            <div class="class-data-container">
+            <!-- 核心科目仪表盘 - 放在顶部，占据整行 -->
+            <div class="chart-card gauge-chart-wrapper">
+              <h3><i class="fas fa-tachometer-alt"></i> 核心科目达标情况</h3>
+              <div ref="gaugeChartRef" class="chart-inner">
+                <!-- 当加载时显示的加载指示器 -->
+                <div v-if="loading" class="chart-loading">
+                  <div class="chart-loading-spinner"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 两栏布局图表区域 -->
+            <div class="two-column-charts">
+              <!-- 横向柱状图 -->
               <div class="chart-card">
-                <h3><i class="fas fa-graduation-cap"></i>班级下次预测各科平均分</h3>
-                <div class="class-data-grid">
-                  <div v-for="(score, subject) in selectedClassData" :key="subject"
-                       class="class-data-card">
-                    <div class="subject-name">{{ subject }}</div>
-                    <div class="average-score">{{ score.toFixed(1) }}</div>
-                    <div class="subject-icon">
-                      <i :class="{
-                        '语文': 'fas fa-book',
-                        '数学': 'fas fa-calculator',
-                        '英语': 'fas fa-language',
-                        '物理': 'fas fa-atom',
-                        '化学': 'fas fa-flask'
-                      }[subject] || 'fas fa-graduation-cap'"></i>
-                    </div>
+                <h3><i class="fas fa-chart-bar"></i> 各科平均分对比</h3>
+                <div ref="barChartRef" class="chart-inner"></div>
+              </div>
+
+              <!-- 班级雷达图 -->
+              <div class="chart-card">
+                <h3><i class="fas fa-chart-radar"></i> 学科均衡性分析</h3>
+                <div ref="classRadarChartRef" class="chart-inner"></div>
+              </div>
+            </div>
+
+            <!-- 班级数据卡片区域 -->
+            <div class="chart-card">
+              <h3><i class="fas fa-graduation-cap"></i> 班级下次预测各科平均分</h3>
+              <div class="class-data-grid">
+                <div v-for="(score, subject) in selectedClassData" :key="subject"
+                     class="class-data-card">
+                  <div class="subject-name">{{ subject }}</div>
+                  <div class="average-score">{{ score.toFixed(1) }}</div>
+                  <div class="subject-icon">
+                    <i :class="{
+              '语文': 'fas fa-book',
+              '数学': 'fas fa-calculator',
+              '英语': 'fas fa-language',
+              '物理': 'fas fa-atom',
+              '化学': 'fas fa-flask'
+            }[subject] || 'fas fa-graduation-cap'"></i>
                   </div>
                 </div>
               </div>
@@ -260,8 +326,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+
+import {ref, onMounted, computed, watch, onUnmounted} from 'vue';
 import axios from 'axios';
+import * as echarts from 'echarts'; // 导入ECharts
 
 export interface PredictedScore {
   subject: string;
@@ -315,6 +383,19 @@ const selectedPrediction = ref<PredictionResponse | null>(null);
 const selectedStudentData = ref<any | null>(null);
 const selectedClassData = ref<any | null>(null);
 const activeTab = ref('create');
+// 在原有状态管理下方添加图表引用
+const pieChartRef = ref(null);
+const lineChartRef = ref(null);
+const radarChartRef = ref(null);
+let pieChart = null;
+let lineChart = null;
+let radarChart = null;
+const barChartRef = ref(null);
+const classRadarChartRef = ref(null);
+const gaugeChartRef = ref(null);
+let barChart: echarts.ECharts | null = null;
+let classRadarChart: echarts.ECharts | null = null;
+let gaugeChart: echarts.ECharts | null = null;
 
 // 输入绑定
 const studentId = ref('');
@@ -330,7 +411,7 @@ const loadPredictions = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get('/cpolar-api/v1/predictions/');
+    const response = await axios.get('http://106.55.62.201:8000/api1/v1/predictions/');
     predictions.value = response.data;
   } catch (err: any) {
     error.value = `加载预测历史失败: ${err.message}`;
@@ -344,7 +425,7 @@ const createPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.post('/cpolar-api/v1/predictions/', {
+    const response = await axios.post('http://106.55.62.201:8000/api1/v1/predictions/', {
       ...newPredictionRequest.value,
       data_source: 'api',
       model_type: null
@@ -366,11 +447,15 @@ const viewPrediction = async (id: string) => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`/cpolar-api/v1/predictions/${id}`);
+    const response = await axios.get(`http://106.55.62.201:8000/api1/v1/predictions/${id}`);
     selectedPrediction.value = response.data;
     predictionId.value = id;
     selectedStudentData.value = null;
     selectedClassData.value = null;
+    // 添加这行
+    setTimeout(() => {
+      initClassCharts();
+    }, 300);
   } catch (err: any) {
     error.value = `加载预测详情失败: ${err.message}`;
     selectedPrediction.value = null;
@@ -389,11 +474,15 @@ const viewStudentPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`/cpolar-api/v1/predictions/${predictionId.value}/student/${studentId.value}`);
+    const response = await axios.get(`http://106.55.62.201:8000/api1/v1/predictions/${predictionId.value}/student/${studentId.value}`);
     console.log('API响应数据：', response.data);
     selectedStudentData.value = response.data;
     console.log('预测分数：', selectedStudentData.value.predicted_scores);
     selectedClassData.value = null;
+    // 添加此行：在数据加载完成后初始化图表
+    setTimeout(() => {
+      initCharts();
+    }, 300);
   } catch (err: any) {
     error.value = `加载学生预测失败: ${err.message}`;
     selectedStudentData.value = null;
@@ -401,6 +490,227 @@ const viewStudentPrediction = async () => {
     loading.value = false;
   }
 };
+const fileInput = ref(null);
+
+const uploadStudentData = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files?.length) return;
+
+  loading.value = true;
+  error.value = '';
+
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+
+  try {
+    const response = await axios.post(
+        'http://106.55.62.201:8000/api1/v1/excel/upload-excel',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+    );
+    // 上传成功后刷新预测数据
+    await loadPredictions();
+    error.value = '文件上传成功！';
+  } catch (err: any) {
+    error.value = `上传失败: ${err.response?.data?.message || err.message}`;
+  } finally {
+    loading.value = false;
+    // 清空文件选择
+    input.value = '';
+  }
+};
+// 添加图表初始化和更新的函数
+const initCharts = () => {
+  if (!selectedStudentData.value || !selectedStudentData.value.predicted_scores) return;
+
+  // 准备数据
+  const subjects = Object.keys(selectedStudentData.value.predicted_scores);
+  const scores = subjects.map(subject => selectedStudentData.value.predicted_scores[subject]);
+
+  // 初始化饼图
+  initPieChart(subjects, scores);
+
+  // 初始化折线图
+  initLineChart(subjects, scores);
+
+  // 初始化雷达图
+  initRadarChart(subjects, scores);
+
+  // 处理窗口大小变化时的图表自适应
+  window.addEventListener('resize', () => {
+    pieChart?.resize();
+    lineChart?.resize();
+    radarChart?.resize();
+  });
+};
+// 初始化饼图
+const initPieChart = (subjects, scores) => {
+  // 如果已存在图表实例则销毁
+  if (pieChart) pieChart.dispose();
+
+  // 获取DOM元素
+  const chartDom = pieChartRef.value;
+  if (!chartDom) return;
+
+  // 创建图表实例
+  pieChart = echarts.init(chartDom);
+
+  // 设置图表配置项
+  const option = {
+    title: {
+      text: '预测成绩分布',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      data: subjects
+    },
+    series: [
+      {
+        name: '预测分数',
+        type: 'pie',
+        radius: '60%',
+        center: ['50%', '60%'],
+        data: subjects.map((subject, index) => ({
+          name: subject,
+          value: scores[index]
+        })),
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  };
+
+  // 使用配置项显示图表
+  pieChart.setOption(option);
+};
+// 初始化折线图
+const initLineChart = (subjects, scores) => {
+  // 如果已存在图表实例则销毁
+  if (lineChart) lineChart.dispose();
+
+  // 获取DOM元素
+  const chartDom = lineChartRef.value;
+  if (!chartDom) return;
+
+  // 创建图表实例
+  lineChart = echarts.init(chartDom);
+
+  // 设置图表配置项
+  const option = {
+    title: {
+      text: '预测成绩横向对比',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    xAxis: {
+      type: 'category',
+      data: subjects
+    },
+    yAxis: {
+      type: 'value',
+      min: function(value) {
+        return Math.max(0, Math.floor(value.min) - 10);
+      }
+    },
+    series: [
+      {
+        name: '预测分数',
+        type: 'line',
+        data: scores,
+        markPoint: {
+          data: [
+            { type: 'max', name: '最大值' },
+            { type: 'min', name: '最小值' }
+          ]
+        },
+        markLine: {
+          data: [{ type: 'average', name: '平均分' }]
+        }
+      }
+    ]
+  };
+
+  // 使用配置项显示图表
+  lineChart.setOption(option);
+};
+
+// 初始化雷达图
+const initRadarChart = (subjects, scores) => {
+  // 如果已存在图表实例则销毁
+  if (radarChart) radarChart.dispose();
+
+  // 获取DOM元素
+  const chartDom = radarChartRef.value;
+  if (!chartDom) return;
+
+  // 创建图表实例
+  radarChart = echarts.init(chartDom);
+
+  // 设置图表配置项
+  const option = {
+    title: {
+      text: '学科能力分布',
+      left: 'center'
+    },
+    tooltip: {},
+    radar: {
+      indicator: subjects.map(subject => ({ name: subject, max: 100 }))
+    },
+    series: [
+      {
+        name: '预测成绩',
+        type: 'radar',
+        data: [
+          {
+            value: scores,
+            name: '学科能力',
+            areaStyle: {
+              opacity: 0.3
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  // 使用配置项显示图表
+  radarChart.setOption(option);
+};
+// 监听数据变化，更新图表
+watch(
+    () => selectedStudentData.value,
+    (newVal) => {
+      if (newVal) {
+        setTimeout(() => {
+          initCharts();
+        }, 300);
+      }
+    }
+);
+// 组件卸载时清除图表实例
+onUnmounted(() => {
+  if (pieChart) pieChart.dispose();
+  if (lineChart) lineChart.dispose();
+  if (radarChart) radarChart.dispose();
+  window.removeEventListener('resize', () => {});
+});
 
 // 查看班级预测结果
 const viewClassPrediction = async () => {
@@ -412,7 +722,7 @@ const viewClassPrediction = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await axios.get(`/cpolar-api/v1/predictions/${predictionId.value}/class/${classId.value}`);
+    const response = await axios.get(`http://106.55.62.201:8000/api1/v1/predictions/${predictionId.value}/class/${classId.value}`);
     selectedClassData.value = response.data;
     selectedStudentData.value = null;
   } catch (err: any) {
@@ -422,6 +732,194 @@ const viewClassPrediction = async () => {
     loading.value = false;
   }
 };
+// 班级图表初始化主函数
+const initClassCharts = () => {
+  if (!selectedClassData.value) return;
+  // 检查DOM元素是否存在
+  if (!barChartRef.value || !classRadarChartRef.value || !gaugeChartRef.value) {
+    console.error('图表容器元素未找到');
+    // 可能是DOM尚未更新，再次尝试
+    setTimeout(() => initClassCharts(), 100);
+    return;
+  }
+
+  const subjects = Object.keys(selectedClassData.value);
+  const scores = subjects.map(subject => selectedClassData.value[subject]);
+
+  initBarChart(subjects, scores);
+  initClassRadarChart(subjects, scores);
+  initGaugeChart(subjects, scores);
+};
+
+// 横向柱状图
+const initBarChart = (subjects: string[], scores: number[]) => {
+  if (barChart) barChart.dispose();
+
+  const chartDom = barChartRef.value;
+  if (!chartDom) return;
+
+  barChart = echarts.init(chartDom);
+
+  const option = {
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'value',
+      max: 100,
+      name: '平均分',
+      axisLabel: { formatter: '{value} 分' }
+    },
+    yAxis: {
+      type: 'category',
+      data: subjects,
+      axisLabel: {
+        rotate: 30,
+        formatter: (value: string) => value.substring(0, 4) // 缩略科目名称
+      }
+    },
+    series: [{
+      type: 'bar',
+      data: scores,
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#36a3eb' },
+          { offset: 1, color: '#9bcdff' }
+        ])
+      }
+    }]
+  };
+
+  barChart.setOption(option);
+};
+
+// 班级雷达图
+const initClassRadarChart = (subjects: string[], scores: number[]) => {
+  if (classRadarChart) classRadarChart.dispose();
+
+  const chartDom = classRadarChartRef.value;
+  if (!chartDom) return;
+
+  classRadarChart = echarts.init(chartDom);
+
+  const option = {
+    radar: {
+      indicator: subjects.map(subject => ({
+        name: subject,
+        max: Math.ceil(Math.max(...scores) + 5)
+      })),
+      shape: 'polygon',
+      splitArea: { show: false }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: scores,
+        areaStyle: {
+          color: 'rgba(255,153,0,0.3)',
+          opacity: 0.3
+        },
+        lineStyle: { width: 2 }
+      }]
+    }]
+  };
+
+  classRadarChart.setOption(option);
+};
+
+// 在initGaugeChart函数中添加设备检测逻辑
+const initGaugeChart = (subjects, scores) => {
+  if (gaugeChart) gaugeChart.dispose();
+
+  const chartDom = gaugeChartRef.value;
+  if (!chartDom) return;
+
+  gaugeChart = echarts.init(chartDom);
+
+  // 只显示前三核心科目
+  const coreSubjects = subjects.slice(0, 3);
+
+  // 检测是否为移动设备
+  const isMobile = window.innerWidth <= 768;
+
+  // 根据设备类型调整布局
+  const option = {
+    grid: {
+      top: '5%',
+      left: '5%',
+      right: '5%',
+      bottom: '5%',
+      containLabel: true
+    },
+    series: coreSubjects.map((subject, index) => ({
+      type: 'gauge',
+      // 在移动端垂直排列，桌面端水平排列
+      center: isMobile
+          ? ['50%', `${25 + index * 30}%`]  // 移动端垂直排列
+          : [`${25 + index * 25}%`, '55%'], // 桌面端水平排列
+      radius: isMobile ? '60%' : '70%',
+      min: 0,
+      max: 100,
+      splitNumber: 10,
+      progress: { show: true, width: 12 },
+      axisLine: { lineStyle: { width: 12 } },
+      axisTick: { show: false },
+      splitLine: { length: 15 },
+      axisLabel: {
+        distance: 25,
+        color: '#666',
+        fontSize: isMobile ? 8 : 10, // 移动端更小的字体
+      },
+      title: {
+        show: true,
+        offsetCenter: [0, '30%'],
+        fontSize: isMobile ? 12 : 14,
+        color: '#333'
+      },
+      detail: {
+        valueAnimation: true,
+        fontSize: isMobile ? 16 : 18,
+        offsetCenter: [0, '-10%'],
+        formatter: '{value}分',
+        color: '#409EFF'
+      },
+      data: [{
+        value: scores[index],
+        name: subject
+      }]
+    }))
+  };
+
+  gaugeChart.setOption(option);
+
+  // 强制重新计算和渲染
+  setTimeout(() => {
+    gaugeChart.resize();
+  }, 200);
+};
+// 监听班级数据变化
+watch(
+    () => selectedClassData.value,
+    (newVal) => {
+      if (newVal) {
+        setTimeout(() => {
+          initClassCharts();
+        }, 300);
+      }
+    }
+);
+
+// 窗口大小变化处理
+window.addEventListener('resize', () => {
+  barChart?.resize();
+  classRadarChart?.resize();
+  gaugeChart?.resize();
+});
+
+// 组件卸载时清理
+onUnmounted(() => {
+  barChart?.dispose();
+  classRadarChart?.dispose();
+  gaugeChart?.dispose();
+});
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -865,7 +1363,7 @@ h3 {
 
 .score-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 3
+  box-shadow: 0.3;
 };
 
 .score-value {
@@ -950,12 +1448,12 @@ h3 {
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2); /* 文字阴影增加可读性 */
 }
 
-/* 班级结果新布局样式 */
+/* 调整班级结果布局 */
 .class-results-container {
   display: grid;
   grid-template-columns: 1fr 1fr; /* 左右两栏布局 */
   gap: 1.5rem;
-  height: calc(100vh - 180px); /* 确保填充剩余空间 */
+  margin-top: 1.5rem;
 }
 
 .class-chart-container,
@@ -1229,6 +1727,524 @@ h3 {
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
+/* 图表容器布局 */
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 右侧数据容器 */
+.class-data-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 确保图表有足够的高度 */
+.chart-inner {
+  width: 100%;
+  height: 300px; /* 保持足够的高度 */
+  min-height: 300px;
+}
+
+/* 为图表添加卡片样式 */
+.chart-card {
+  background-color: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+}
+
+.chart-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+  .charts-container {
+    grid-template-columns: 1fr; /* 在小屏幕上单列显示 */
+  }
+
+  .chart-inner {
+    height: 250px; /* 调整小屏幕上的图表高度 */
+  }
+}
+
+/* 调整雷达图标签间距 */
+.radar-chart .echarts-radar-axis-name {
+  padding: 2px 5px !important;
+}
+
+/* 班级结果容器布局 - 修改为更宽的油表图 */
+.class-results-container {
+  display: grid;
+  grid-template-columns: 1fr; /* 改成单列布局 */
+  gap: 1.5rem;
+}
+
+/* 为油表图单独设置样式 */
+.chart-card:has(div[ref="gaugeChartRef"]) {
+  width: 100%;
+  grid-column: 1 / -1; /* 让仪表盘占据整行 */
+  margin-bottom: 2rem;
+  height: auto;
+  min-height: 400px; /* 增加最小高度 */
+}
+/* 修改油表图的宽度和位置 */
+.gauge-chart-container {
+  position: relative;
+  height: 400px;
+  width: 100%;
+}
+/* 修改仪表盘图表宽度 */
+.gaugeChartRef,
+div[ref="gaugeChartRef"] {
+  width: 100%;
+  min-width: 100%;
+  height: 300px;
+}
+
+/* 确保仪表盘图表卡片有足够的宽度 */
+.chart-card:has(div[ref="gaugeChartRef"]) {
+  width: 20%;
+  grid-column: 1 / -1; /* 让仪表盘占据整行 */
+  margin-bottom: 2rem;
+}
+/* 增加仪表盘图表容器的高度 */
+.chart-card:has(div[ref="gaugeChartRef"]) .chart-inner {
+  height: 400px;
+  min-height: 400px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.gauge-item {
+  position: absolute;
+  width: 33.3%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 992px) {
+  .class-results-container {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]) {
+    grid-column: 1 / -1;
+  }
+}
+.chart-card h3 {
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--grey-light);
+  padding-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-card h3 i {
+  color: var(--primary-light);
+}
+
+.chart-inner {
+  width: 100%;
+  height: 300px;
+  min-height: 300px;
+  flex-grow: 1;
+}
+
+/* ------------ 班级结果容器布局 ------------ */
+.class-results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 两栏布局容器 */
+.two-column-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+/* ------------ 仪表盘特殊样式 ------------ */
+/* 仪表盘包装器 */
+.gauge-chart-wrapper {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+/* 仪表盘卡片特殊样式 */
+.chart-card:has(div[ref="gaugeChartRef"]),
+.chart-card.gauge-chart-wrapper {
+  width: 100%;
+  grid-column: 1 / -1; /* 让仪表盘占据整行 */
+  margin-bottom: 2rem;
+  height: auto;
+  min-height: 400px; /* 增加最小高度 */
+  padding-bottom: 2rem;
+}
+
+/* 仪表盘图表容器 */
+.chart-card:has(div[ref="gaugeChartRef"]) .chart-inner,
+.gauge-chart-wrapper .chart-inner {
+  height: 400px;
+  min-height: 400px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+/* 仪表盘DOM元素 */
+div[ref="gaugeChartRef"] {
+  width: 100%;
+  height: 400px;
+}
+
+/* 仪表盘标题特殊样式 */
+.gauge-chart-wrapper h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-dark);
+  text-align: center;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 0.8rem;
+}
+
+
+/* ------------ 班级数据卡片 ------------ */
+/* 班级数据网格 */
+.class-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0.5rem;
+}
+
+.class-data-card {
+  background-color: var(--light-color);
+  border-radius: var(--radius);
+  padding: 1.5rem 0.5rem 1rem 0.5rem;
+  text-align: center;
+  border: 1px solid var(--grey-light);
+  position: relative;
+  transition: var(--transition);
+}
+
+.class-data-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.subject-name {
+  font-size: 0.9rem;
+  color: var(--dark-color);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.average-score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.subject-icon {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.4rem;
+  color: var(--primary-color);
+  opacity: 0.8;
+}
+
+/* ------------ 响应式调整 ------------ */
+/* 常规桌面屏幕 */
+@media (min-width: 1200px) {
+  .chart-card:has(div[ref="gaugeChartRef"]),
+  .gauge-chart-wrapper {
+    min-height: 450px;
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]) .chart-inner,
+  .gauge-chart-wrapper .chart-inner,
+  div[ref="gaugeChartRef"] {
+    height: 450px;
+  }
+}
+
+/* 平板和中等屏幕 */
+@media (max-width: 992px) {
+  .two-column-charts {
+    grid-template-columns: 1fr; /* 平板设备上转为单列 */
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]),
+  .gauge-chart-wrapper {
+    min-height: 350px;
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]) .chart-inner,
+  .gauge-chart-wrapper .chart-inner,
+  div[ref="gaugeChartRef"] {
+    height: 350px;
+  }
+}
+
+/* 手机屏幕 */
+@media (max-width: 768px) {
+  .chart-card:has(div[ref="gaugeChartRef"]),
+  .gauge-chart-wrapper {
+    min-height: 300px;
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]) .chart-inner,
+  .gauge-chart-wrapper .chart-inner,
+  div[ref="gaugeChartRef"] {
+    height: 300px;
+  }
+
+  .class-data-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* 确保小屏幕上的图表清晰可见 */
+@media (max-width: 576px) {
+  .chart-card:has(div[ref="gaugeChartRef"]),
+  .gauge-chart-wrapper {
+    min-height: 250px;
+    padding: 1rem 0.5rem;
+  }
+
+  .chart-card:has(div[ref="gaugeChartRef"]) .chart-inner,
+  .gauge-chart-wrapper .chart-inner,
+  div[ref="gaugeChartRef"] {
+    height: 250px;
+  }
+
+  .gauge-chart-wrapper h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* ------------ 图表刷新和动画 ------------ */
+/* 确保图表在窗口大小变化时平滑调整 */
+.chart-inner * {
+  transition: all 0.3s ease;
+}
+
+/* 图表加载中动画 */
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* 油表图在不同设备上的响应式调整 */
+@media (max-width: 768px) {
+  .gauge-chart-wrapper {
+    min-height: 450px; /* 增加移动端高度，让图表有更多垂直空间 */
+  }
+
+  .gauge-chart-wrapper .chart-inner {
+    height: 400px;
+    flex-direction: column; /* 垂直排列仪表盘 */
+    align-items: center;
+  }
+
+  /* 修改ECharts图表容器的样式 */
+  #gaugeChartRef {
+    height: 450px !important;
+  }
+}
+
+/* 确保仪表盘在小屏幕上垂直排列 */
+@media (max-width: 480px) {
+  .gauge-chart-wrapper {
+    min-height: 600px; /* 进一步增加高度适应垂直排列 */
+  }
+
+  .gauge-chart-wrapper .chart-inner {
+    height: 550px;
+  }
+}
+/* 侧边栏移动端优化 */
+@media (max-width: 768px) {
+  .main-content {
+    grid-template-columns: 1fr; /* 在小屏幕上转为单列布局 */
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    height: auto; /* 自适应高度 */
+    max-height: 70vh; /* 限制最大高度 */
+    overflow-y: auto; /* 允许滚动 */
+  }
+
+  .sidebar-tabs {
+    position: sticky; /* 保持选项卡固定 */
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+
+  .content {
+    height: auto; /* 自适应高度 */
+    max-height: none;
+  }
+}
+/* 学生预测结果部分响应式优化 */
+@media (max-width: 768px) {
+  .charts-container {
+    grid-template-columns: 1fr; /* 单列显示所有图表 */
+  }
+
+  .chart-inner {
+    height: 250px; /* 减小图表高度 */
+    min-height: 250px;
+  }
+
+  .score-cards {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* 更小的卡片 */
+  }
+
+  .score-value {
+    font-size: 1.2rem; /* 减小字体大小 */
+  }
+
+  .score-subject {
+    font-size: 0.75rem;
+  }
+}
+/* 班级数据卡片响应式优化 */
+@media (max-width: 768px) {
+  .class-data-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* 更小的卡片 */
+    gap: 0.5rem; /* 减小间距 */
+  }
+
+  .class-data-card {
+    padding: 1rem 0.25rem 0.75rem 0.25rem; /* 减小内边距 */
+  }
+
+  .subject-name {
+    font-size: 0.8rem;
+  }
+
+  .average-score {
+    font-size: 1.2rem;
+  }
+
+  .subject-icon {
+    font-size: 1.1rem;
+  }
+}
+/* 移动端查询面板优化 */
+@media (max-width: 768px) {
+  /* 侧边栏改为可折叠样式 */
+  .sidebar {
+    position: relative;
+    max-height: 20vh; /* 限制最大高度为视口的50% */
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+  }
+
+  /* 添加折叠控制按钮 */
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-light);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+  }
+
+  /* 折叠时的样式 */
+  .sidebar.collapsed {
+    max-height: 50px;
+    overflow: hidden;
+  }
+
+  /* 确保内容区域在折叠时不受影响 */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    height: auto;
+  }
+
+  /* 修改查询区域布局 */
+  .query-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* 学生和班级查询部分紧凑显示 */
+  .query-student, .query-class {
+    padding: 0.75rem;
+    background-color: rgba(67, 97, 238, 0.05);
+    border-radius: var(--radius);
+    border: 1px solid var(--grey-light);
+  }
+
+  /* 查询输入框和按钮更紧凑 */
+  .query-section .form-group {
+    margin-bottom: 0.5rem;
+  }
+
+  .query-section h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .query-section .primary-button {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* 优化内容显示，确保学生/班级数据正确显示 */
+  .student-results, .class-results {
+    margin-top: 1rem;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  /* 确保图表完整显示 */
+  .chart-inner {
+    width: 100%;
+    height: 250px;
+    min-height: 0; /* 移除最小高度限制 */
+  }
+}
+
+
 </style>
 <style scoped>
 body, html {

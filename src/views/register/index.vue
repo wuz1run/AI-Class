@@ -682,4 +682,160 @@ const register = () => {
     padding: 20px 20px 30px;
   }
 }
+/* 平板适配 (768px - 991px) */
+@media (max-width: 991px) {
+  .decoration-column {
+    display: none;
+  }
+
+  .registration-card {
+    width: 450px;
+    max-width: 90%;
+  }
+}
+
+/* 大型手机适配 (576px - 767px) */
+@media (max-width: 767px) {
+  .registration-card {
+    width: 100%;
+    max-width: 450px;
+    margin: 20px;
+  }
+
+  .card-header {
+    padding: 25px 0 12px;
+  }
+
+  .card-title {
+    font-size: 24px;
+  }
+
+  .card-body {
+    padding: 15px 20px 25px;
+  }
+
+  .input-group {
+    margin-bottom: 16px;
+  }
+
+  .custom-input {
+    padding: 10px 10px 10px 34px;
+    font-size: 14px;
+  }
+
+  .register-btn {
+    padding: 10px 30px;
+    font-size: 15px;
+  }
+
+  /* 减少动画元素数量，提高性能 */
+  .floating-shape:nth-child(n+6) {
+    display: none;
+  }
+}
+
+/* 小型手机适配 (小于576px) */
+@media (max-width: 576px) {
+  .registration-container {
+    padding: 10px;
+  }
+
+  .registration-card {
+    width: 100%;
+    max-width: 100%;
+    margin: 10px;
+    border-radius: 12px;
+  }
+
+  .card-title {
+    font-size: 22px;
+  }
+
+  .title-underline {
+    width: 60px;
+  }
+
+  @keyframes expand {
+    0% {
+      width: 0;
+    }
+    100% {
+      width: 60px;
+    }
+  }
+
+  .input-label {
+    font-size: 13px;
+  }
+
+  .custom-input {
+    padding: 10px 10px 10px 32px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  .input-icon {
+    left: 10px;
+    font-size: 14px;
+  }
+
+  .register-btn {
+    padding: 10px 25px;
+    font-size: 14px;
+  }
+
+  .login-link {
+    font-size: 13px;
+  }
+
+  /* 进一步减少动画元素 */
+  .floating-shape:nth-child(n+4) {
+    display: none;
+  }
+}
+
+/* 极小屏幕适配 (小于375px) */
+@media (max-width: 375px) {
+  .card-body {
+    padding: 12px 15px 20px;
+  }
+
+  .input-group {
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 20px;
+  }
+
+  .register-btn-wrapper {
+    margin-top: 20px;
+  }
+
+  /* 确保按钮不会太小，影响用户体验 */
+  .register-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 保持竖屏和横屏时的一致体验 */
+@media (max-height: 600px) and (orientation: landscape) {
+  .registration-container {
+    padding: 10px 0;
+  }
+
+  .content-wrapper {
+    margin: 10px 0;
+  }
+
+  .registration-card {
+    transform: scale(0.9);
+    margin: 0;
+  }
+
+  .input-group {
+    margin-bottom: 12px;
+  }
+}
 </style>

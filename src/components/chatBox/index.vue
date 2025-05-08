@@ -1,50 +1,58 @@
 <template>
-  <div class="ml-6 mt-5">
-    <div id="chatBox" class="w-[90%] h-[77%] overflow-auto absolute bg-base-200">
-      <<div v-for="(value, index) in chatMsg" class="mt-2">
-      <div class="chat" :class="[chatMsg[index]['role'] === 'user' ? 'chat-end' : 'chat-start']">
-        <div class="chat-image avatar">
-          <div class="w-14 rounded-full">
-            <img
-                alt="Failed"
-                :src="chatMsg[index]['role'] === 'user' ? userinfostore.userInfo.avatar : '/aichat/aiAvatar.png'" />
+  <div class="chat-container">
+    <div id="chatBox" class="chat-messages-container">
+      <div v-for="(value, index) in chatMsg" :key="index" class="message-wrapper">
+        <div class="chat" :class="[chatMsg[index]['role'] === 'user' ? 'chat-end' : 'chat-start']">
+          <div class="avatar-container">
+            <div class="avatar-circle">
+              <img
+                  alt="头像"
+                  :src="chatMsg[index]['role'] === 'user' ? userinfostore.userInfo.avatar : '/aichat/aiAvatar.png'" />
+            </div>
+          </div>
+          <div
+              class="message-bubble"
+              :class="chatMsg[index]['role'] === 'user' ? 'user-bubble' : 'ai-bubble'">
+            <span v-if="chatMsg[index]['role'] === 'user'">{{ chatMsg[index]['content'] }}</span>
+            <div v-else v-html="formatMessage(chatMsg[index])" class="ai-content"></div>
+
+            <!-- 教学设计下载按钮 -->
+            <el-button
+                v-if="chatMsg[index]['content'] === '教学设计已经生成并下载' && docDownloadUrl"
+                type="primary"
+                class="download-btn"
+                @click="manualDownload">
+              <i class="el-icon-download mr-1"></i> 下载教学设计
+            </el-button>
           </div>
         </div>
-        <div
-            class="chat-bubble"
-            :class="[chatMsg[index]['role'] === 'user' ? 'bg-blue-700 text-base-100' : 'bg-base-100 text-base-content']">
-          <span v-if="chatMsg[index]['role'] === 'user'">{{ chatMsg[index]['content'] }}</span>
-          <div v-else v-html="formatMessage(chatMsg[index])"></div>
+      </div>
 
-          <!-- Add button below the generated AI response -->
-          <el-button
-              v-if="chatMsg[index]['content'] === '教学设计已经生成并下载' && docDownloadUrl"
-              type="primary"
-              class="mt-2"
-              @click="manualDownload"
-          >
-            下载教学设计
-          </el-button>
+      <!-- 加载动画 -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="loading-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
         </div>
       </div>
     </div>
-    </div>
-  </div>
-      <div class="textarea textarea-bordered absolute bottom-0 left-0 right-0 flex justify-center w-full bg-white">
-      <div class="w-[78%] flex items-end pb-4">
+
+    <div class="input-container">
+      <div class="input-wrapper">
         <textarea
             v-model="textInput"
             id="textArea"
-            class="outline-none text-lg w-full max-h-[210px] resize-none border rounded-lg p-3"
-            placeholder="请输入你想问的问题,生成教案请以“/教案”为开头 例如：/教案 三角函数"
+            class="message-input"
+            placeholder='请输入你想问的问题，生成教案请以"&#47;教案"为开头 例如：&#47;教案 三角函数'
             @keydown.enter.exact.prevent="messageSent"
             @keydown.shift.enter="newLine" />
-        <el-icon :size="33" class="ml-4 mb-2 hover:bg-base-300 cursor-pointer" @click="messageSent">
-          <Promotion />
-        </el-icon>
+        <button class="send-button" @click="messageSent" :disabled="isLoading">
+          <el-icon :size="24"><Promotion /></el-icon>
+        </button>
       </div>
     </div>
-
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -67,6 +75,8 @@ let lastUploadedIndex = 0;
 const props = defineProps<{ topicId: number }>();
 const route = useRoute();
 let previousTopicId = Number(route.query.topicId);
+const docDownloadUrl = ref('');
+const isLoading = ref(false);
 
 const formatMessage = (message) => {
   return message.role === 'system' ? md.render(message.content) : message.content;
@@ -89,18 +99,40 @@ const getChatHistory = async () => {
     if (res.code === 200) {
       chatMsg.value = res.data.chat_history.map((msg: any) => reactive(msg));
       lastUploadedIndex = chatMsg.value.length;
+
+      // 滚动到最新消息
+      nextTick(() => {
+        const container = document.getElementById('chatBox');
+        if (container) container.scrollTop = container.scrollHeight;
+      });
     } else {
-      ElNotification({ title: 'Warning', message: res.msg, type: 'warning' });
+      ElNotification({
+        title: '提示',
+        message: res.msg,
+        type: 'warning',
+        position: 'top-right'
+      });
     }
   } catch (err: any) {
-    ElNotification({ title: 'Error', message: err.toString(), type: 'error' });
+    ElNotification({
+      title: '错误',
+      message: err.toString(),
+      type: 'error',
+      position: 'top-right'
+    });
   }
 };
+
 function manualDownload() {
   if (docDownloadUrl.value) {
     window.open(docDownloadUrl.value, "_blank");
   } else {
-    ElNotification({ title: '提示', message: '当前暂无可下载内容', type: 'warning' });
+    ElNotification({
+      title: '提示',
+      message: '当前暂无可下载内容',
+      type: 'warning',
+      position: 'top-right'
+    });
   }
 }
 
@@ -113,13 +145,22 @@ const uploadChatHistory = async () => {
       chatHistory: newMessages
     });
     if (res.code === 200) {
-      ElNotification({ title: 'OK', message: res.msg, type: 'success' });
       lastUploadedIndex = chatMsg.value.length;
     } else {
-      ElNotification({ title: 'Warning', message: res.msg, type: 'warning' });
+      ElNotification({
+        title: '提示',
+        message: res.msg,
+        type: 'warning',
+        position: 'top-right'
+      });
     }
   } catch (err: any) {
-    ElNotification({ title: 'Error', message: err.toString(), type: 'error' });
+    ElNotification({
+      title: '错误',
+      message: err.toString(),
+      type: 'error',
+      position: 'top-right'
+    });
   }
 };
 
@@ -132,13 +173,22 @@ const uploadChatHistoryWithTopicId = async (topicId: number) => {
       chatHistory: newMessages
     });
     if (res.code === 200) {
-      ElNotification({ title: 'OK', message: res.msg, type: 'success' });
       lastUploadedIndex = chatMsg.value.length;
     } else {
-      ElNotification({ title: 'Warning', message: res.msg, type: 'warning' });
+      ElNotification({
+        title: '提示',
+        message: res.msg,
+        type: 'warning',
+        position: 'top-right'
+      });
     }
   } catch (err: any) {
-    ElNotification({ title: 'Error', message: err.toString(), type: 'error' });
+    ElNotification({
+      title: '错误',
+      message: err.toString(),
+      type: 'error',
+      position: 'top-right'
+    });
   }
 };
 
@@ -171,12 +221,10 @@ onMounted(() => {
 onUnmounted(() => {
   uploadChatHistory();
 });
-let docDownloadUrl=ref('')
-const isLoading = ref(false);
 
 async function messageSent() {
   let userMessage = textInput.value.trim();
-  if (!userMessage) return;
+  if (!userMessage || isLoading.value) return;
 
   const timestamp = new Date().toISOString();
 
@@ -195,12 +243,16 @@ async function messageSent() {
         timestamp: new Date().toISOString()
       });
 
-      const AIResponse = await getAIResponseAPI(chatMsg.value.concat([{ role: 'user', content: fullPrompt }]));
-      chatMsg.value.push({
-        role: 'system',
-        content: "教学设计已经生成并下载",
-        timestamp: new Date().toISOString()
+      await nextTick(() => {
+        const container = document.getElementById('chatBox');
+        if (container) container.scrollTop = container.scrollHeight;
       });
+
+      const AIResponse = await getAIResponseAPI(chatMsg.value.concat([{ role: 'user', content: fullPrompt }]));
+
+      // 更新最后一条消息
+      const lastMessageIndex = chatMsg.value.length - 1;
+      chatMsg.value[lastMessageIndex].content = "教学设计已经生成并下载";
 
       let payload = AIResponse.replace(/`/g, "").replace('json', "");
       await nextTick(() => {
@@ -211,15 +263,32 @@ async function messageSent() {
       const response = await downloadDocAPI(payload);
       const fileUrl = response.download_url;
       if (fileUrl) {
-        docDownloadUrl.value = fileUrl; // 保存下载链接
-        ElNotification({ title: '已生成', message: '点击下方按钮手动下载', type: 'success' });
+        docDownloadUrl.value = fileUrl;
+        ElNotification({
+          title: '生成成功',
+          message: '教学设计已生成，点击下方按钮下载',
+          type: 'success',
+          duration: 5000,
+          position: 'top-right'
+        });
       } else {
-        console.error("文件未找到");
+        ElNotification({
+          title: '提示',
+          message: '文件未找到，请重试',
+          type: 'warning',
+          position: 'top-right'
+        });
       }
     } catch (error) {
-      console.error("文件下载失败", error);
+      ElNotification({
+        title: '错误',
+        message: '教学设计生成失败，请重试',
+        type: 'error',
+        position: 'top-right'
+      });
+    } finally {
+      isLoading.value = false;
     }
-    isLoading.value = false;
   } else {
     chatMsg.value.push({ role: 'user', content: userMessage, timestamp });
     textInput.value = '';
@@ -241,7 +310,12 @@ async function messageSent() {
         });
       }
     } catch (err: any) {
-      ElNotification({ title: '出错啦', message: err.toString(), type: 'error' });
+      ElNotification({
+        title: '出错了',
+        message: err.toString(),
+        type: 'error',
+        position: 'top-right'
+      });
     }
   }
 }
@@ -262,7 +336,7 @@ function newLine(e: KeyboardEvent) {
 const docPrompt = `
 你是一位专业的课程设计专家，擅长面向高等教育的教学设计。请根据我提供的课程主题和对象，输出一份完整、结构清晰、排版规范的**Markdown格式教学设计**。输出请遵循以下结构规范，并**至少包含3个具体的课堂互动环节**以提升学生参与度和学习效果。
 
-输出格式请为 **JSON**，其中每个字段的键为课程设计的结构部分（如 "title"、"课程基本信息"、"学习目标与能力培养"、"课程内容"、"课后研究与拓展"），值为该部分对应的 Markdown 格式内容（**值中可以使用 ##、### 等多级标题，但不要再使用 # 一级标题**）。
+输出格式请为 **JSON**，其中每个字段的键为课程设计的结构部分，总字数至少2000字（如 "title"、"课程基本信息"、"学习目标与能力培养"、"课程内容"、"课后研究与拓展"），值为该部分对应的 Markdown 格式内容（**值中可以使用 ##、### 等多级标题，但不要再使用 # 一级标题**）。
 
 JSON结构如下：要加上
 
@@ -277,41 +351,285 @@ JSON结构如下：要加上
 </script>
 
 <style scoped lang="scss">
-#chatBox {
+.chat-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f7fa;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.chat-messages-container {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  margin-bottom: 80px;
   scroll-behavior: smooth;
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
   }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+
   &::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-    &:hover { background: #555; }
+    background: #c0c4cc;
+    border-radius: 3px;
+
+    &:hover {
+      background: #909399;
+    }
   }
 }
 
-:deep(.chat-bubble) {
-  h1, h2, h3, h4, h5, h6 { font-weight: bold; margin: 8px 0; }
-  pre {
-    background-color: rgba(0, 0, 0, 0.05);
-    padding: 8px;
-    border-radius: 4px;
-    overflow-x: auto;
+.message-wrapper {
+  margin-bottom: 18px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat {
+  display: flex;
+
+  &.chat-end {
+    flex-direction: row-reverse;
   }
+
+  &.chat-start {
+    flex-direction: row;
+  }
+}
+
+.avatar-container {
+  margin: 0 12px;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fff;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  word-break: break-word;
+
+  &.user-bubble {
+    background: linear-gradient(135deg, #4a89dc, #5d9cec);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  &.ai-bubble {
+    background: white;
+    color: #333;
+    border-bottom-left-radius: 4px;
+  }
+}
+
+.ai-content {
+  line-height: 1.6;
+}
+
+.download-btn {
+  margin-top: 12px;
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  padding: 8px 16px;
+
+  &:hover {
+    background-color: #3a78cc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.message-input {
+  flex: 1;
+  border: 1px solid #dcdfe6;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 16px;
+  resize: none;
+  max-height: 210px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  outline: none;
+
+  &:focus {
+    border-color: #4a89dc;
+    box-shadow: 0 0 0 2px rgba(74, 137, 220, 0.2);
+  }
+
+  &::placeholder {
+    color: #9aa6b8;
+  }
+}
+
+.send-button {
+  background-color: #4a89dc;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 8px rgba(74, 137, 220, 0.3);
+
+  &:hover {
+    background-color: #3a78cc;
+    transform: scale(1.05);
+  }
+
+  &:disabled {
+    background-color: #c0c4cc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.loading-dots {
+  display: flex;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: #4a89dc;
+  border-radius: 50%;
+  margin: 0 4px;
+  animation: bounce 1.4s infinite ease-in-out both;
+
+  &:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+
+  &:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+:deep(.chat-bubble) {
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin: 10px 0;
+    color: #2c3e50;
+  }
+
+  pre {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid #e9ecef;
+    margin: 12px 0;
+  }
+
   code {
-    font-family: monospace;
+    font-family: 'Source Code Pro', Menlo, monospace;
     background-color: rgba(0, 0, 0, 0.05);
     padding: 2px 4px;
     border-radius: 3px;
+    font-size: 0.9em;
   }
-  a { color: #0366d6; }
+
+  a {
+    color: #4a89dc;
+    text-decoration: none;
+    border-bottom: 1px solid #4a89dc;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #3a78cc;
+    }
+  }
+
   blockquote {
-    border-left: 4px solid #ddd;
-    padding-left: 16px;
-    margin-left: 0;
-    color: #666;
+    border-left: 4px solid #4a89dc;
+    padding: 8px 16px;
+    margin: 12px 0;
+    background-color: rgba(74, 137, 220, 0.05);
+    color: #5c6b7f;
   }
-  ul, ol { padding-left: 24px; }
+
+  ul, ol {
+    padding-left: 24px;
+    margin: 8px 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+
+    th, td {
+      border: 1px solid #e9ecef;
+      padding: 8px 12px;
+    }
+
+    th {
+      background-color: #f8f9fa;
+    }
+  }
 }
 </style>

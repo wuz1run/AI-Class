@@ -88,6 +88,22 @@ router.beforeEach((to) => {
     const loginStore = useMainStore().loginStore()
     const requiredAuth = navItems.find(item => item.path === to.path)?.requireAuth
 
+    // 首页重定向逻辑
+    if (to.path === '/') {
+        if (!loginStore.loginSession) {
+            return '/login'
+        } else {
+            const role = userStore.userInfo.character as UserRole || 'student'
+            if (role === 'student') {
+                return '/studentQuizView'
+            } else if (role === 'teacher') {
+                return '/chat'
+            } else {
+                return '/home' // 默认跳转（可按需修改）
+            }
+        }
+    }
+
     // 需要登录但未登录
     if (requiredAuth && !loginStore.loginSession) {
         return '/login'
@@ -101,9 +117,10 @@ router.beforeEach((to) => {
             routeConfig.roles.includes(userRole)
 
         if (!hasPermission) {
-            return '/unauthorized' // 添加无权限页面
+            return '/unauthorized'
         }
     }
 })
+
 
 export default router;

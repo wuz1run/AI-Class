@@ -1,17 +1,17 @@
 <template>
-  <!-- 外层容器 -->
-  <div class="bg-gray-50 p-8 min-h-screen w-[1500px] mx-auto">
+  <!-- 外层容器 - 调整为响应式宽度 -->
+  <div class="bg-gray-50 p-4 sm:p-6 md:p-8 min-h-screen w-full mx-auto">
     <!-- 主内容容器 -->
-    <div class="mx-auto  w-full">
+    <div class="mx-auto w-full max-w-[1500px]">
       <!-- 班级选择区 -->
-      <div class="mb-12 flex flex-col items-center gap-8">
-        <div class="flex w-full flex-col items-center gap-6">
+      <div class="mb-8 md:mb-12 flex flex-col items-center gap-4 md:gap-8">
+        <div class="flex w-full flex-col items-center gap-4 md:gap-6">
           <!-- 选择框容器 -->
-          <div class="flex w-full items-center justify-center gap-4">
+          <div class="flex w-full flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
             <select
                 v-model="selectedClass"
                 @change="loadClassMembers"
-                class="select select-bordered select-lg w-full max-w-md bg-white text-lg shadow-lg hover:shadow-xl transition-all"
+                class="select select-bordered select-lg w-full max-w-md bg-white text-base md:text-lg shadow-lg hover:shadow-xl transition-all"
                 :disabled="!classes.length"
             >
               <option disabled value="">请选择班级</option>
@@ -24,7 +24,7 @@
               </option>
             </select>
 
-            <span v-if="membersLoading" class="text-gray-500">
+            <span v-if="membersLoading" class="text-gray-500 mt-2 sm:mt-0">
               <el-icon class="animate-spin"><Loading /></el-icon>
               加载中...
             </span>
@@ -32,7 +32,7 @@
 
           <!-- 创建班级按钮 -->
           <button
-              class="btn w-full max-w-xs bg-purple-600 px-8 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-purple-700"
+              class="btn w-full sm:max-w-xs bg-purple-600 px-4 sm:px-8 py-2 sm:py-3 text-base md:text-lg font-semibold text-white shadow-lg transition-all hover:bg-purple-700"
               @click="openDialog"
           >
             创建班级
@@ -42,25 +42,25 @@
         <!-- 成员列表 -->
         <div class="w-full">
           <div v-if="selectedClass" class="mx-auto w-full max-w-3xl">
-            <div class="grid grid-cols-1 gap-6">
+            <div class="grid grid-cols-1 gap-4 md:gap-6">
               <div
                   v-for="member in members"
                   :key="member.userid"
-                  class="member-card mx-auto w-full max-w-2xl cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all hover:border-purple-400 hover:shadow-lg"
+                  class="member-card mx-auto w-full max-w-2xl cursor-pointer rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 md:p-6 shadow-md transition-all hover:border-purple-400 hover:shadow-lg"
                   @click="selectMember(member)"
               >
-                <div class="flex items-center gap-6 w-full px-4">
+                <div class="flex items-center gap-3 sm:gap-6 w-full px-2 sm:px-4">
                   <!-- 头像 -->
                   <div
-                      class="avatar w-16 h-16 rounded-full bg-gradient-to-br from-purple-200 to-purple-400 text-white font-bold flex items-center justify-center text-xl shadow-sm"
+                      class="avatar w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-200 to-purple-400 text-white font-bold flex items-center justify-center text-lg sm:text-xl shadow-sm"
                   >
                     {{ member.username.charAt(0).toUpperCase() }}
                   </div>
                   <!-- 成员信息 -->
                   <div class="flex-1 min-w-0">
-                    <div class="font-medium text-xl">{{ member.username }}</div>
-                    <div class="text-gray-500 text-sm mt-1">ID: {{ member.userid }}</div>
-                    <div class="text-gray-400 text-sm mt-1">
+                    <div class="font-medium text-lg sm:text-xl">{{ member.username }}</div>
+                    <div class="text-gray-500 text-xs sm:text-sm mt-1">ID: {{ member.userid }}</div>
+                    <div class="text-gray-400 text-xs sm:text-sm mt-1">
                       角色:
                       <span v-if="member.character === 0">学生</span>
                       <span v-else-if="member.character === 1">教师</span>
@@ -70,52 +70,52 @@
                 </div>
               </div>
             </div>
-              </div>
-            </div>
-
-          <!-- 空状态 -->
-          <div
-              v-if="!members.length && !membersLoading"
-              class="mx-auto mt-8 w-full max-w-xl rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500"
-          >
-            <el-icon class="mb-2 text-3xl text-purple-500"><User /></el-icon>
-            <p class="text-sm">
-              当前班级暂无成员，邀请学生使用邀请码：
-              <span
-                  class="select-none font-semibold text-purple-600 cursor-pointer hover:underline"
-                  @click="copyInviteCode"
-              >
-                {{ inviteCode }}
-              </span>
-              加入
-            </p>
           </div>
+        </div>
 
-          <!-- 邀请码提示 -->
-          <div
-              v-else
-              class="mx-auto mt-8 w-full max-w-xl text-center text-sm text-gray-600"
-          >
-            邀请学生输入邀请码：
+        <!-- 空状态 -->
+        <div
+            v-if="!members.length && !membersLoading"
+            class="mx-auto mt-4 sm:mt-8 w-full max-w-xl rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 sm:p-6 text-center text-gray-500"
+        >
+          <el-icon class="mb-2 text-2xl sm:text-3xl text-purple-500"><User /></el-icon>
+          <p class="text-xs sm:text-sm">
+            当前班级暂无成员，邀请学生使用邀请码：
             <span
-                class="select-none font-bold text-purple-600 cursor-pointer hover:underline"
+                class="select-none font-semibold text-purple-600 cursor-pointer hover:underline"
                 @click="copyInviteCode"
             >
               {{ inviteCode }}
             </span>
-            加入班级
-          </div>
+            加入
+          </p>
+        </div>
+
+        <!-- 邀请码提示 -->
+        <div
+            v-else
+            class="mx-auto mt-4 sm:mt-8 w-full max-w-xl text-center text-xs sm:text-sm text-gray-600"
+        >
+          邀请学生输入邀请码：
+          <span
+              class="select-none font-bold text-purple-600 cursor-pointer hover:underline"
+              @click="copyInviteCode"
+          >
+            {{ inviteCode }}
+          </span>
+          加入班级
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- 右侧浮窗（保持原有样式） -->
+  <!-- 右侧浮窗（移动端全屏显示） -->
   <div
       v-if="selectedMember"
-      class="fixed right-0 top-0 w-[400px] h-screen bg-white shadow-2xl z-50 p-8 border-l border-gray-200 transition-transform duration-500 ease-in-out"
+      class="fixed inset-0 sm:right-0 sm:top-0 sm:left-auto sm:w-[300px] md:w-[400px] sm:h-screen bg-white shadow-2xl z-50 p-4 sm:p-6 md:p-8 border-l border-gray-200 transition-transform duration-500 ease-in-out"
       :style="{ transform: selectedMember ? 'translateX(0)' : 'translateX(100%)' }"
   >
-    <h2 class="text-2xl font-bold text-purple-600 mb-4">{{ selectedMember.username }} 的详细信息</h2>
+    <h2 class="text-xl sm:text-2xl font-bold text-purple-600 mb-4">{{ selectedMember.username }} 的详细信息</h2>
     <p class="text-gray-700">ID: {{ selectedMember.userid }}</p>
     <p class="text-gray-700 mt-1">
       角色:
@@ -132,8 +132,8 @@
     </button>
   </div>
 
-    <!-- 创建班级弹窗（保持原有样式） -->
-  <el-dialog v-model="dialogVisible" title="创建班级" width="30%">
+  <!-- 创建班级弹窗（移动端适配） -->
+  <el-dialog v-model="dialogVisible" title="创建班级" width="90%" :max-width="500">
     <el-form :model="classForm" ref="formRef" label-width="80px" label-position="top">
       <el-form-item
           label="班级名称"
@@ -320,5 +320,22 @@ const loadClassMembers = async () => {
     transform: rotate(360deg);
   }
 }
-</style>
 
+/* 添加媒体查询样式 */
+@media (max-width: 640px) {
+  .el-dialog {
+    width: 95% !important;
+    margin: 10px auto !important;
+  }
+
+  .dialog-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dialog-footer button {
+    width: 100%;
+  }
+}
+</style>

@@ -1,3 +1,4 @@
+<!-- 修改模板部分 -->
 <template>
   <div class="preview-container">
     <div class="stats-header">
@@ -25,7 +26,7 @@
           <h3 class="question-text">{{ index + 1 }}. {{ quiz.question }}</h3>
 
           <!-- 选择题 -->
-          <div v-if="quiz.type === 'choice'" class="options-container">
+          <div v-if="quiz.type === 'choice'" class="options-container" :class="optionStyle">
             <el-radio-group
                 v-model="answers[quiz.quizesid]"
                 :disabled="submitted"
@@ -83,23 +84,25 @@ quizId: {{ quiz.quizesid }}
 相似度: {{ essayScores[quiz.quizesid]?.similarity_percentage }}
                   </pre>
 
-                  <el-tag
-                      :type="essayScores[quiz.quizesid].similarity_percentage >= 60 ? 'success' : 'danger'"
-                      effect="dark"
-                      class="similarity-tag"
-                  >
-                    相似度: {{ essayScores[quiz.quizesid].similarity_percentage.toFixed(2) }}%
-                    ({{ essayScores[quiz.quizesid].similarity_percentage >= 60 ? '通过' : '未通过' }})
-                  </el-tag>
+                  <div class="tag-container">
+                    <el-tag
+                        :type="essayScores[quiz.quizesid].similarity_percentage >= 60 ? 'success' : 'danger'"
+                        effect="dark"
+                        class="similarity-tag"
+                    >
+                      相似度: {{ essayScores[quiz.quizesid].similarity_percentage.toFixed(2) }}%
+                      ({{ essayScores[quiz.quizesid].similarity_percentage >= 60 ? '通过' : '未通过' }})
+                    </el-tag>
 
-                  <!-- 逻辑矛盾状态 -->
-                  <el-tag
-                      :type="essayScores[quiz.quizesid].has_logical_contradictions ? 'danger' : 'info'"
-                      effect="plain"
-                      class="contradiction-tag"
-                  >
-                    逻辑矛盾: {{ essayScores[quiz.quizesid].has_logical_contradictions ? '是' : '否' }}
-                  </el-tag>
+                    <!-- 逻辑矛盾状态 -->
+                    <el-tag
+                        :type="essayScores[quiz.quizesid].has_logical_contradictions ? 'danger' : 'info'"
+                        effect="plain"
+                        class="contradiction-tag"
+                    >
+                      逻辑矛盾: {{ essayScores[quiz.quizesid].has_logical_contradictions ? '是' : '否' }}
+                    </el-tag>
+                  </div>
 
                   <!-- 评分原因 -->
                   <div
@@ -193,6 +196,7 @@ quizId: {{ quiz.quizesid }}
           size="large"
           @click="handleSubmit"
           :disabled="submitted || answeredCount < quizList.length"
+          class="submit-button"
       >
         {{ submitted ? '已提交' : '提交答案' }}
       </el-button>
@@ -203,13 +207,10 @@ quizId: {{ quiz.quizesid }}
         <div>评分状态: {{ isScoring ? '正在评分' : '未在评分' }}</div>
         <div>评分进度: {{ Object.keys(scoringInProgress).filter(k => scoringInProgress[k]).length }}/{{ Object.keys(scoringInProgress).length }}</div>
         <div>评分结果数: {{ Object.keys(essayScores).length }}</div>
-        <!-- 添加评分结果详情 -->
-<!--        <div v-if="Object.keys(essayScores).length > 0">-->
-<!--          <h4>评分结果详情:</h4>-->
-<!--          <pre style="max-height: 200px; overflow: auto; background: #f5f5f5; padding: 10px; font-size: 12px;">{{ JSON.stringify(essayScores, null, 2) }}</pre>-->
-<!--        </div>-->
-        <el-button @click="forceReassessAllEssays" size="small" type="warning" style="margin-right: 10px;">强制重新评分</el-button>
-        <el-button @click="refreshEssayView" size="small" type="primary">刷新视图</el-button>
+        <div class="debug-buttons">
+          <el-button @click="forceReassessAllEssays" size="small" type="warning" style="margin-right: 10px;">强制重新评分</el-button>
+          <el-button @click="refreshEssayView" size="small" type="primary">刷新视图</el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -219,7 +220,7 @@ quizId: {{ quiz.quizesid }}
 import { storeToRefs } from 'pinia';
 import { ElCard, ElTag, ElEmpty, ElNotification, ElRadio, ElRadioGroup, ElInput, ElCollapse, ElCollapseItem, ElButton } from "element-plus";
 import { SuccessFilled, CircleCloseFilled, Warning } from '@element-plus/icons-vue';
-import { computed, onMounted, ref, watch, nextTick, reactive } from 'vue';
+import {computed, onMounted, ref, watch, nextTick, reactive, onUnmounted} from 'vue';
 import { useQuizStore } from "../../stores/quizStore";
 import { getQuizAPI } from "../../apis";
 import { useRequest } from "vue-hooks-plus";
@@ -246,6 +247,32 @@ console.log('当前ID:', id);
 
 // 调试标志 - 可以根据需要开启或关闭
 const isDebugging = ref(true);
+// 添加设备类型检测
+const isMobile = ref(false);
+const isTablet = ref(false);
+
+// 检测设备类型函数
+const checkDeviceType = () => {
+  const width = window.innerWidth;
+  isMobile.value = width <= 480;
+  isTablet.value = width > 480 && width <= 768;
+};
+
+// 初始化和监听窗口大小变化
+onMounted(() => {
+  checkDeviceType();
+  window.addEventListener('resize', checkDeviceType);
+});
+
+// 组件销毁前移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', checkDeviceType);
+});
+
+// 使用 computed 属性优化移动设备的UI布局
+const optionStyle = computed(() => {
+  return isMobile.value ? 'mobile-options' : '';
+});
 
 // 检测是否安装了Vue Devtools
 const hasVueDevtools = ref(false);
@@ -1141,5 +1168,313 @@ const scoreWithNetworkCheck = async (quiz) => {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+/* 基础响应式调整 */
+.preview-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* 平板设备适配 */
+@media screen and (max-width: 768px) {
+  .preview-container {
+    padding: 15px;
+  }
+
+  .stats-header h1 {
+    font-size: 24px;
+  }
+
+  .quiz-item {
+    padding: 15px;
+  }
+
+  .question-text {
+    font-size: 15px;
+  }
+
+  .el-button {
+    width: 180px;
+  }
+
+  .essay-feedback {
+    margin-top: 12px;
+  }
+
+  .detail-section {
+    padding: 10px;
+  }
+}
+
+/* 手机设备适配 */
+@media screen and (max-width: 480px) {
+  .preview-container {
+    padding: 10px;
+  }
+
+  .stats-header h1 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .stats {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stats :deep(.el-tag) {
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  .quiz-item {
+    padding: 12px;
+  }
+
+  .question-text {
+    font-size: 14px;
+    margin: 10px 0;
+  }
+
+  .option-item {
+    padding: 10px 8px;
+  }
+
+  .option-letter {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 12px;
+    margin-right: 8px;
+  }
+
+  .option-text {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .cloze-input {
+    max-width: 100%;
+  }
+
+  .el-button {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  /* 简答题响应式调整 */
+  .essay-feedback {
+    margin-top: 10px;
+    padding-left: 8px;
+  }
+
+  .correct-answer {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .scoring-info {
+    padding: 12px;
+  }
+
+  .detail-section {
+    padding: 8px;
+    margin-top: 12px;
+  }
+
+  .detail-heading {
+    font-size: 13px;
+  }
+
+  .keypoint-comment {
+    margin-left: 20px;
+    font-size: 12px;
+  }
+
+  /* 评分标签调整 */
+  .similarity-tag, .contradiction-tag {
+    font-size: 12px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+  }
+
+  /* 调试面板 */
+  .debug-panel {
+    font-size: 12px;
+    padding: 10px;
+    margin-top: 20px;
+  }
+
+  .debug-panel h3 {
+    font-size: 14px;
+  }
+}
+
+/* 极小屏幕设备适配 */
+@media screen and (max-width: 320px) {
+  .stats-header h1 {
+    font-size: 18px;
+  }
+
+  .question-text {
+    font-size: 13px;
+  }
+
+  .option-item {
+    padding: 8px 6px;
+  }
+
+  .keypoint-item {
+    padding: 8px;
+  }
+}
+
+/* 修复Element Plus组件在移动端的一些问题 */
+:deep(.el-radio__label) {
+  white-space: normal;
+  line-height: 1.4;
+}
+
+:deep(.el-input__inner) {
+  font-size: inherit;
+}
+
+/* 确保表单元素在移动设备上更易读取 */
+@media screen and (max-width: 480px) {
+  :deep(.el-input__inner) {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  :deep(.el-radio) {
+    margin-right: 0;
+    margin-left: 0;
+    width: 100%;
+  }
+
+  :deep(.el-radio__label) {
+    padding-left: 8px;
+  }
+}
+
+/* 帮助保持表单元素与滚动的可访问性 */
+.quiz-list {
+  -webkit-overflow-scrolling: touch;
+}
+/* 添加移动设备上选项的样式 */
+.mobile-options .option-item {
+  margin: 12px 0;
+}
+
+.mobile-options .custom-radio {
+  width: 100%;
+}
+
+/* 优化标签展示 */
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* 调整输入框在移动设备上的样式 */
+.cloze-input {
+  width: 100%;
+}
+
+/* 优化按钮在移动设备上的布局 */
+.submit-button {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 调试按钮的移动端布局 */
+@media screen and (max-width: 480px) {
+  .debug-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .debug-buttons .el-button {
+    margin-right: 0 !important;
+    width: 100%;
+  }
+}
+
+/* 调整表单在不同尺寸设备上的触摸交互 */
+@media (hover: none) {
+  .option-item {
+    padding: 12px 8px;
+  }
+
+  .option-item:active {
+    background: #e6f1fc;
+  }
+
+  .el-button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* 为移动设备优化触摸区域 */
+@media screen and (max-width: 480px) {
+  :deep(.el-radio__inner) {
+    width: 18px;
+    height: 18px;
+  }
+
+  :deep(.el-radio__input) {
+    margin-top: 2px;
+  }
+
+  .option-item {
+    min-height: 44px; /* 确保触摸区域足够大 */
+  }
+
+  .el-button {
+    min-height: 44px;
+  }
+}
+
+/* 确保文本在移动设备上完全显示 */
+.option-text {
+  word-break: break-word;
+}
+
+/* 添加安全区域支持 */
+@supports(padding: max(0px)) {
+  .preview-container {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  @media screen and (max-width: 480px) {
+    .preview-container {
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+    }
+  }
+}
+
+/* 添加暗黑模式支持 */
+@media (prefers-color-scheme: dark) {
+  /* 只有在用户系统设置为暗黑模式，且Element Plus启用了暗黑模式时才应用 */
+  .el-card.is-dark {
+    background-color: #1a1a1a;
+  }
+
+  .correct-card.is-dark {
+    background: #213a21;
+    border-color: #3e663e;
+  }
 }
 </style>
